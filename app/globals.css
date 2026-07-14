@@ -1,0 +1,182 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  Ring Relay design tokens.
+  Light is the default (approved) theme. Dark variants are wired on
+  [data-theme="..."] for phase-2 use; the marketing + admin UI ships on light.
+*/
+:root {
+  --bg: #fafaf8;
+  --grid: rgba(15, 27, 45, 0.05);
+  --glow: rgba(234, 88, 12, 0.07);
+  --nav: rgba(250, 250, 248, 0.72);
+  --line: rgba(15, 27, 45, 0.09);
+  --line2: rgba(15, 27, 45, 0.16);
+  --ink: #0f1b2d;
+  --body: #4b5872;
+  --mute: #8791a5;
+  --chip: #ffffff;
+  --chip-ink: #31405c;
+  --card: #ffffff;
+  --card2: #fdfcfa;
+  --panel: #f4f4f1;
+  --bubble: #f1f2f0;
+  --bubble-ink: #2e3b54;
+  --ai-bg1: rgba(234, 88, 12, 0.1);
+  --ai-bg2: rgba(234, 88, 12, 0.04);
+  --ai-line: rgba(234, 88, 12, 0.3);
+  --ai-ink: #9a3d00;
+  --acc: #ea580c;
+  --acc-a: #f97324;
+  --acc-b: #de4e03;
+  --acc-ink: #ffffff;
+  --acc-dim: #c24a05;
+  --shadow: rgba(15, 27, 45, 0.1);
+  --ok: #0e9f55;
+}
+
+/* Midnight Navy — documented dark variant, ready for a future theme toggle */
+[data-theme="dark"] {
+  --bg: #060b14;
+  --grid: rgba(255, 255, 255, 0.025);
+  --glow: rgba(255, 107, 26, 0.09);
+  --nav: rgba(6, 11, 20, 0.6);
+  --line: rgba(255, 255, 255, 0.07);
+  --line2: #26344e;
+  --ink: #ffffff;
+  --body: #93a0b5;
+  --mute: #56647c;
+  --chip: rgba(255, 255, 255, 0.02);
+  --chip-ink: #aab6c9;
+  --card: #0d1626;
+  --card2: #0a111e;
+  --panel: rgba(255, 255, 255, 0.04);
+  --bubble: rgba(255, 255, 255, 0.045);
+  --bubble-ink: #c4cddb;
+  --ai-bg1: rgba(255, 107, 26, 0.16);
+  --ai-bg2: rgba(255, 107, 26, 0.08);
+  --ai-line: rgba(255, 107, 26, 0.32);
+  --ai-ink: #ffd8bd;
+  --acc: #ff6b1a;
+  --acc-a: #ff7e33;
+  --acc-b: #f05e00;
+  --acc-ink: #0a0f18;
+  --acc-dim: #ffb07a;
+  --shadow: rgba(0, 0, 0, 0.55);
+  --ok: #2ed573;
+}
+
+@layer base {
+  body {
+    background: var(--bg);
+    color: var(--body);
+    font-family: var(--font-body), sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection {
+    background: rgba(234, 88, 12, 0.25);
+  }
+  input,
+  select,
+  textarea {
+    font-family: var(--font-body), sans-serif;
+  }
+  /* Visible keyboard focus for interactive elements (mouse clicks unaffected) */
+  a:focus-visible,
+  button:focus-visible,
+  [role="button"]:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid var(--acc);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  input:focus,
+  select:focus,
+  textarea:focus {
+    outline: none;
+    border-color: var(--acc) !important;
+    box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.12);
+  }
+}
+
+@layer components {
+  /* Blueprint grid background, masked to fade out ~75% down the page */
+  .blueprint-grid {
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 88px 88px;
+    -webkit-mask-image: radial-gradient(
+      ellipse 95% 75% at 50% 0%,
+      black 25%,
+      transparent 78%
+    );
+    mask-image: radial-gradient(
+      ellipse 95% 75% at 50% 0%,
+      black 25%,
+      transparent 78%
+    );
+  }
+
+  /* Hazard stripe — top-of-page safety band */
+  .hazard-stripe {
+    background: repeating-linear-gradient(
+      -45deg,
+      var(--acc) 0 14px,
+      var(--ink) 14px 28px
+    );
+  }
+  /* On navy CTA bands the dark segment becomes transparent */
+  .hazard-stripe-onink {
+    background: repeating-linear-gradient(
+      -45deg,
+      var(--acc) 0 14px,
+      transparent 14px 28px
+    );
+  }
+
+  /* Thick orange underline for headline emphasis (never orange text) */
+  .headline-em {
+    background: linear-gradient(var(--acc), var(--acc)) 0 96% / 100% 7% no-repeat;
+    padding-bottom: 4px;
+  }
+
+  /* Floating mono tag riding a card's top edge */
+  .card-tag {
+    font-family: var(--font-mono), monospace;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    color: #ffffff;
+    background: var(--ink);
+    border-radius: 6px;
+    padding: 6px 12px;
+  }
+}
+
+/* Staggered fade-up helpers for hero elements */
+.fade-1 {
+  animation: fadeUp 0.55s ease both;
+}
+.fade-2 {
+  animation: fadeUp 0.55s ease 0.08s both;
+}
+.fade-3 {
+  animation: fadeUp 0.55s ease 0.16s both;
+}
+.fade-4 {
+  animation: fadeUp 0.55s ease 0.24s both;
+}
+.fade-5 {
+  animation: fadeUp 0.55s ease 0.32s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
