@@ -475,7 +475,7 @@ export function VoiceDemo() {
       {micDenied && (
         <Banner tone="warn">
           Microphone access is blocked. Click the mic/lock icon in your
-          browser&apos;s address bar to allow it, then start again — or type
+          browser&apos;s address bar to allow it, then start again, or type
           instead.
         </Banner>
       )}
@@ -618,7 +618,7 @@ export function VoiceDemo() {
       )}
 
       <p className="mt-6 text-center text-[12.5px] text-mute">
-        This is a live demo — the receptionist is AI, the company is a sample.
+        This is a live demo. The receptionist is AI, the company is a sample.
         Bookings you make here are stored only for this demo.
       </p>
     </div>
@@ -725,6 +725,6 @@ function statusLabel(status: Status, started: boolean): string {
     case "speaking":
       return "Speaking";
     default:
-      return "Your turn — type below";
+      return "Your turn, type below";
   }
 }

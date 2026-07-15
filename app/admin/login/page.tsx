@@ -31,7 +31,7 @@ export default function LoginPage({
               Sign in to your workspace
             </h1>
             <p className="mt-1 text-[14px] text-body">
-              Internal tool — accounts are created by an owner.
+              Internal tool. Accounts are created by an owner.
             </p>
           </div>
           <LoginForm redirectTo={redirectTo} />

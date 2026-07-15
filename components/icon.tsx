@@ -22,6 +22,7 @@ import {
   Phone,
   Star,
   UserCog,
+  BookOpen,
   type LucideIcon,
 } from "lucide-react";
 
@@ -49,6 +50,7 @@ const MAP: Record<string, LucideIcon> = {
   Phone,
   Star,
   UserCog,
+  BookOpen,
 };
 
 /** Render a lucide icon by the string name stored in mock-data. */

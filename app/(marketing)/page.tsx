@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Phone, ArrowRight, Check } from "lucide-react";
+import { Mic, ArrowRight, Check } from "lucide-react";
 import { PrimaryCta, SecondaryCta } from "@/components/site/buttons";
 import { LiveCallCard } from "@/components/site/live-call-card";
 import { Reveal } from "@/components/site/reveal";
@@ -53,23 +53,24 @@ export default function HomePage() {
             {HERO.sub}
           </p>
 
-          <div className="fade-4 mb-8 flex flex-col items-start gap-[14px] sm:flex-row sm:items-center">
-            <PrimaryCta href="/contact">Book a Demo</PrimaryCta>
-            <SecondaryCta href="/how-it-works">See How It Works</SecondaryCta>
+          <div className="fade-4 mb-8 flex flex-col items-stretch gap-[12px] sm:flex-row sm:items-center">
+            <PrimaryCta href="/contact" className="w-full sm:w-auto">
+              Book a Demo
+            </PrimaryCta>
+            <SecondaryCta href="/how-it-works" className="w-full sm:w-auto">
+              See How It Works
+            </SecondaryCta>
           </div>
 
-          <div className="mb-14 flex items-center gap-[9px]">
-            <Phone size={14} strokeWidth={2.2} className="text-acc" />
-            <span className="text-[14.5px] text-body">
-              Try it yourself: call the AI at{" "}
-              <a
-                href={AGENCY.demoPhoneHref}
-                className="font-bold text-acc-dim"
-              >
-                {AGENCY.demoPhone}
-              </a>
-              . She&apos;s smart.
-            </span>
+          <div className="mb-14">
+            <Link
+              href="/demo"
+              className="inline-flex items-center gap-[9px] text-[14.5px] font-semibold text-acc-dim hover:text-acc"
+            >
+              <Mic size={15} strokeWidth={2.2} className="text-acc" />
+              Try it yourself: talk to the AI right now
+              <ArrowRight size={15} strokeWidth={2.4} />
+            </Link>
           </div>
 
           <div className="fade-5 flex flex-wrap items-center gap-x-[22px] gap-y-3 border-t border-line pt-[26px]">
@@ -240,8 +241,8 @@ export default function HomePage() {
             One-time setup, flat monthly retainer.
           </h2>
           <p className="mx-auto mt-4 max-w-[520px] text-[17px] leading-[1.6] text-body">
-            No contracts, no per-minute surprises. Costs less than one missed
-            job.
+            No per-minute surprises. Cancel anytime after 90 days. Costs less
+            than one missed job.
           </p>
         </Reveal>
 

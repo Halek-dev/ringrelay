@@ -11,8 +11,8 @@ export const AGENCY = {
   name: "Ring Relay",
   wordmark: { black: "Ring", accent: "Relay" },
   tagline: "We relay the call. You keep the lead.",
-  demoPhone: "1 (800) 333-3333",
-  demoPhoneHref: "tel:18003333333",
+  // The demo is a browser experience, not a phone line. Point everything here.
+  demoPath: "/demo",
   email: "hello@ringrelay.com",
 } as const;
 
@@ -69,7 +69,7 @@ export const PROBLEM_STATS: ProblemStat[] = [
   {
     value: "$390",
     label: "average value of a booked service call",
-    detail: "For HVAC, plumbing, and restoration the first job is only the start — miss it and you miss the repeat business behind it.",
+    detail: "For HVAC, plumbing, and restoration the first job is only the start. Miss it and you miss the repeat business behind it.",
   },
   {
     value: "62%",
@@ -91,7 +91,7 @@ export const HOME_STEPS: HowStep[] = [
   {
     num: "01",
     title: "Call comes in",
-    desc: "A customer calls your existing number — day, night, weekend. Ring Relay picks up before the third ring, every time.",
+    desc: "A customer calls your existing number, any time of day, night, or weekend. Ring Relay picks up before the third ring, every time.",
   },
   {
     num: "02",
@@ -156,10 +156,10 @@ export type Feature = {
 };
 
 export const FEATURES: Feature[] = [
-  { icon: "Clock", title: "24/7 answering", desc: "Every call picked up before the third ring — nights, weekends, holidays, and while you're mid-job." },
+  { icon: "Clock", title: "24/7 answering", desc: "Every call picked up before the third ring, day and night, weekends and holidays, even while you're mid-job." },
   { icon: "CalendarCheck", title: "Appointment booking", desc: "Reads your real availability and books actual open slots straight into your calendar." },
-  { icon: "MessageSquareText", title: "Call summaries texted to you", desc: "Job type, name, address, urgency, and a recording link — one text you can read in ten seconds." },
-  { icon: "ShieldCheck", title: "Spam & robocall filtering", desc: "Junk calls get filtered out before they ever reach you or eat into your call volume." },
+  { icon: "MessageSquareText", title: "Call summaries texted to you", desc: "Job type, name, address, urgency, and a recording link, all in one text you can read in ten seconds." },
+  { icon: "ShieldCheck", title: "Spam & robocall filtering", desc: "Junk calls get filtered out before they ever reach you, so you only deal with real customers." },
   { icon: "Languages", title: "Bilingual EN / ES", desc: "Answers callers in English or Spanish automatically, so you never lose a job over a language barrier." },
   { icon: "RefreshCw", title: "CRM sync", desc: "Pushes booked jobs into Jobber, ServiceTitan, or Housecall Pro so your office stays in one place." },
 ];
@@ -184,6 +184,7 @@ export type PricingTier = {
   setup: string;
   popular: boolean;
   cta: string;
+  valueLine: string;
   features: string[];
 };
 
@@ -196,12 +197,13 @@ export const PRICING_TIERS: PricingTier[] = [
     setup: "$499",
     popular: false,
     cta: "Start with Starter",
+    valueLine: "One recovered $8,000 job pays for 26 months.",
     features: [
       "24/7 call answering",
       "Appointment booking",
       "Call summaries texted to you",
-      "Spam & robocall filtering",
-      "Up to 200 calls / month",
+      "Spam and robocall filtering",
+      "Emergency call escalation",
     ],
   },
   {
@@ -209,16 +211,15 @@ export const PRICING_TIERS: PricingTier[] = [
     name: "Pro",
     blurb: "For established shops that live and die by the schedule.",
     monthly: "$499",
-    setup: "$999",
+    setup: "$499",
     popular: true,
     cta: "Book a Demo",
+    valueLine: "One recovered $8,000 job pays for 16 months.",
     features: [
       "Everything in Starter",
       "Bilingual English + Spanish",
       "CRM sync: Jobber, ServiceTitan, Housecall Pro",
-      "Emergency call escalation",
-      "Call recordings & transcripts",
-      "Up to 600 calls / month",
+      "Priority support",
     ],
   },
   {
@@ -226,15 +227,15 @@ export const PRICING_TIERS: PricingTier[] = [
     name: "Multi-location",
     blurb: "Multiple crews, numbers, or markets under one roof.",
     monthly: "$899",
-    setup: "$1,999",
+    setup: "$499",
     popular: false,
     cta: "Talk to Us",
+    valueLine: "One recovered $8,000 job pays for 9 months.",
     features: [
       "Everything in Pro",
-      "Multiple numbers & locations",
+      "Multiple numbers and locations",
       "Custom call flows per location",
       "Dedicated account manager",
-      "Unlimited calls",
     ],
   },
 ];
@@ -250,30 +251,34 @@ export const COMPARE_ROWS: CompareRow[] = [
   { label: "24/7 answering & booking", starter: "✓", pro: "✓", multi: "✓" },
   { label: "Call summaries by text", starter: "✓", pro: "✓", multi: "✓" },
   { label: "Spam filtering", starter: "✓", pro: "✓", multi: "✓" },
-  { label: "Monthly call volume", starter: "200", pro: "600", multi: "Unlimited" },
-  { label: "Bilingual EN / ES", starter: "—", pro: "✓", multi: "✓" },
-  { label: "CRM sync", starter: "—", pro: "✓", multi: "✓" },
-  { label: "Emergency escalation", starter: "—", pro: "✓", multi: "✓" },
+  { label: "Emergency escalation", starter: "✓", pro: "✓", multi: "✓" },
+  { label: "Bilingual EN / ES", starter: "No", pro: "✓", multi: "✓" },
+  { label: "CRM sync", starter: "No", pro: "✓", multi: "✓" },
+  { label: "Priority support", starter: "No", pro: "✓", multi: "✓" },
   { label: "Numbers / locations", starter: "1", pro: "1", multi: "Up to 10" },
-  { label: "Dedicated account manager", starter: "—", pro: "—", multi: "✓" },
+  { label: "Dedicated account manager", starter: "No", pro: "No", multi: "✓" },
 ];
 
 export type Faq = { q: string; a: string };
 
 export const HOME_FAQS: Faq[] = [
-  { q: "Does it sound robotic?", a: "No. It uses a natural voice and talks the way your office manager would. Most callers never realize they're speaking with an AI — and you pick the voice during setup." },
-  { q: "What happens to spam calls?", a: "Robocalls and spam are filtered out before they ever reach you, and they don't count against your monthly call volume. Only real customers make it through." },
+  { q: "Does it sound robotic?", a: "No. It uses a natural voice and talks the way your office manager would. Most callers never realize they're speaking with an AI, and you pick the voice during setup." },
+  { q: "What happens to spam calls?", a: "Robocalls and spam are filtered out before they ever reach you. Only real customers make it through." },
   { q: "Can it book into my existing calendar?", a: "Yes. It connects to Google Calendar, Jobber, ServiceTitan, or Housecall Pro, reads your real availability, and books only actual open slots." },
   { q: "How long is setup?", a: "Typically about five business days from kickoff to answering live. We do the heavy lifting; you spend roughly 90 minutes total across the week." },
   { q: "What if it can't answer something?", a: "It never guesses. If a question is outside what it knows, it takes a detailed message, flags true emergencies for immediate callback, and texts you right away so you can follow up." },
 ];
 
+export const PRICING_FAQS: Faq[] = [
+  { q: "What happens if I get a lot of calls?", a: "The price is flat regardless of call volume. There are no per-minute charges and no overage bills." },
+  { q: "What if it cannot answer something?", a: "It takes a message and texts you the details immediately. It never guesses at pricing or makes promises on your behalf." },
+  { q: "How long until it is live?", a: "About five business days from the discovery call. You approve how it sounds before it ever answers a real customer." },
+];
+
 export const BILLING_FAQS: Faq[] = [
-  { q: "Is there a contract?", a: "No. Month to month, cancel any time. The one-time setup fee covers building and testing your agent; the retainer covers everything after that." },
-  { q: "What counts as a call?", a: "Any answered inbound call over 10 seconds. Spam and robocalls we filter out do not count against your monthly volume." },
+  { q: "Is there a contract?", a: "There is a 90 day minimum, then you can cancel anytime. That window covers building your agent and gives it time to prove itself on your calls." },
   { q: "What does the setup fee cover?", a: "Building your agent around your services and pricing, connecting your calendar and CRM, porting or forwarding your number, and live testing with you before launch." },
   { q: "Can I switch tiers later?", a: "Yes, up or down, effective the next billing cycle. No new setup fee unless you are adding locations." },
-  { q: "What happens if I go over my call volume?", a: "We never drop calls. Overage bills at a flat per-call rate, and if it happens two months running we will suggest the tier that saves you money." },
 ];
 
 export type OnboardingStep = {
@@ -285,9 +290,9 @@ export type OnboardingStep = {
 
 export const ONBOARDING_STEPS: OnboardingStep[] = [
   { num: "01", title: "Discovery call", day: "Day 1", desc: "Thirty minutes on your services, pricing, service area, and how you want emergencies handled. We record it and build from the transcript." },
-  { num: "02", title: "Agent build", day: "Days 1–3", desc: "We write your greeting, qualifying questions, and booking rules, then train the agent on your business. You review a test recording and mark anything to change." },
+  { num: "02", title: "Agent build", day: "Days 1 to 3", desc: "We write your greeting, qualifying questions, and booking rules, then train the agent on your business. You review a test recording and mark anything to change." },
   { num: "03", title: "Number setup", day: "Day 3", desc: "Keep your existing number. We set up forwarding so the AI catches what you cannot, or provision a new tracked line if you prefer." },
-  { num: "04", title: "Testing", day: "Days 4–5", desc: "We call it together with your real scenarios: the 2 AM burst pipe, the tire-kicker, the Spanish-speaking caller. It goes live only when you sign off." },
+  { num: "04", title: "Testing", day: "Days 4 to 5", desc: "We call it together with your real scenarios: the 2 AM burst pipe, the tire-kicker, the Spanish-speaking caller. It goes live only when you sign off." },
   { num: "05", title: "Go live + monitoring", day: "Day 5", desc: "Flip the switch. First two weeks we review every call log with you, then tune the agent weekly after that." },
 ];
 
@@ -297,7 +302,7 @@ export const ONBOARDING_CHECKLIST: ChecklistItem[] = [
   { title: "Business hours", note: "When you're open, and how after-hours should be handled." },
   { title: "Services & price ranges", note: "What you do, what you don't, rough ballparks for common jobs." },
   { title: "Service area", note: "Zip codes or a radius, plus any travel-fee rules." },
-  { title: "Pricing sheet", note: "Whatever you have — a rate card, a spreadsheet, or ballpark numbers." },
+  { title: "Pricing sheet", note: "Whatever you have: a rate card, a spreadsheet, or ballpark numbers." },
   { title: "Calendar access", note: "Google, Jobber, ServiceTitan, or Housecall Pro login for booking." },
   { title: "30 minutes for testing", note: "One call with us before launch to hear it live." },
 ];
@@ -368,7 +373,7 @@ export const COMPARISON: {
     { label: "Knows your services & pricing", values: [true, false, "Generic script"] },
     { label: "Texts you a full summary", values: [true, false, "Sometimes"] },
     { label: "Bilingual EN / ES", values: [true, false, "Extra fee"] },
-    { label: "Cost", values: ["Flat monthly", "Free (loses jobs)", "$1–2 / minute"] },
+    { label: "Cost", values: ["Flat monthly", "Free (loses jobs)", "$1 to $2 / minute"] },
   ],
 };
 
@@ -389,6 +394,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { label: "Leads", href: "/admin/leads", icon: "Users" },
   { label: "Clients", href: "/admin/clients", icon: "Building2" },
   { label: "Outreach", href: "/admin/outreach", icon: "MessageSquareQuote" },
+  { label: "Playbook", href: "/admin/playbook", icon: "BookOpen" },
   { label: "Testimonials", href: "/admin/testimonials", icon: "Star" },
   { label: "Team", href: "/admin/team", icon: "UserCog", ownerOnly: true },
 ];

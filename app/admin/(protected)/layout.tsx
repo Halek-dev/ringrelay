@@ -3,7 +3,7 @@ import { AdminShell, type ShellUser } from "@/components/admin/admin-shell";
 import { requireProfile } from "@/lib/auth";
 
 export const metadata: Metadata = {
-  title: "Ring Relay — Ops Console",
+  title: "Ops Console",
   robots: { index: false, follow: false },
 };
 

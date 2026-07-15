@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
-import { Clock, Phone } from "lucide-react";
+import Link from "next/link";
+import { Clock, Mic, ArrowRight } from "lucide-react";
 import { Eyebrow } from "@/components/site/section";
 import { DemoForm } from "@/components/site/demo-form";
-import { AGENCY } from "@/lib/mock-data";
 
 export const metadata: Metadata = {
-  title: "Book a Demo — Ring Relay",
+  title: "Book a Demo",
   description:
-    "Hear it answer your calls. Fifteen minutes, no slides — we call the agent live and you throw your hardest customer scenarios at it.",
+    "Hear it answer your calls. Fifteen minutes, no slides. We call the agent live and you throw your hardest customer scenarios at it.",
 };
 
 export default function ContactPage() {
@@ -40,21 +40,20 @@ export default function ContactPage() {
           </div>
           <div className="flex items-start gap-[13px]">
             <span className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-[9px] border border-ai-line bg-ai-bg2">
-              <Phone size={15} strokeWidth={2.2} className="text-acc" />
+              <Mic size={15} strokeWidth={2.2} className="text-acc" />
             </span>
             <div>
               <div className="text-[15px] font-bold text-ink">
-                Prefer to talk now?
+                Prefer to try it now?
               </div>
               <div className="mt-[2px] text-[14px] text-body">
-                Call the AI at{" "}
-                <a
-                  href={AGENCY.demoPhoneHref}
-                  className="font-bold text-acc-dim"
+                <Link
+                  href="/demo"
+                  className="inline-flex items-center gap-1 font-bold text-acc-dim hover:text-acc"
                 >
-                  {AGENCY.demoPhone}
-                </a>
-                . She&apos;s smart, we promise.
+                  Talk to the AI in your browser
+                  <ArrowRight size={14} strokeWidth={2.4} />
+                </Link>
               </div>
             </div>
           </div>

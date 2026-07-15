@@ -38,10 +38,6 @@ export function weekDates(d = new Date()): Date[] {
   return Array.from({ length: 7 }, (_, i) => addDays(start, i));
 }
 
-export function weekdayIndex(d: Date): number {
-  return d.getDay(); // 0=Sun..6=Sat, matches daily_tasks.day_of_week
-}
-
 export function weekdayAbbrev(d: Date): string {
   return WEEKDAYS[d.getDay()];
 }

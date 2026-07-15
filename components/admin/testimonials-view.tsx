@@ -42,8 +42,8 @@ export function TestimonialsView() {
       id: `custom-${Date.now()}`,
       quote: form.quote.trim(),
       name: form.name.trim(),
-      business: form.business.trim() || "—",
-      location: form.location.trim() || "—",
+      business: form.business.trim() || "-",
+      location: form.location.trim() || "-",
       industry: form.industry,
       rating: form.rating,
     });
@@ -77,7 +77,7 @@ export function TestimonialsView() {
             Testimonials
           </h1>
           <p className="mt-1 text-[14.5px] text-body">
-            Add customer quotes here — they publish straight to the landing page.
+            Add customer quotes here. They publish straight to the landing page.
           </p>
         </div>
         <Link

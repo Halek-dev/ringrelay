@@ -5,12 +5,17 @@ import { Eyebrow } from "@/components/site/section";
 import { Reveal } from "@/components/site/reveal";
 import { FaqAccordion } from "@/components/site/faq-accordion";
 import { CtaBand } from "@/components/site/cta-band";
-import { PRICING_TIERS, COMPARE_ROWS, BILLING_FAQS } from "@/lib/mock-data";
+import {
+  PRICING_TIERS,
+  COMPARE_ROWS,
+  PRICING_FAQS,
+  BILLING_FAQS,
+} from "@/lib/mock-data";
 
 export const metadata: Metadata = {
-  title: "Pricing — Ring Relay",
+  title: "Pricing",
   description:
-    "One-time setup, flat monthly retainer. Three tiers for HVAC, plumbing, and restoration. No contracts.",
+    "One-time setup, flat monthly retainer. Three tiers for HVAC, plumbing, and restoration. Cancel anytime after 90 days.",
 };
 
 export default function PricingPage() {
@@ -25,8 +30,8 @@ export default function PricingPage() {
           <span className="headline-em">one missed job.</span>
         </h1>
         <p className="fade-3 mx-auto mt-[22px] max-w-[560px] text-pretty text-[19px] leading-[1.65] text-body">
-          One-time setup, flat monthly retainer. No contracts, no per-minute
-          surprises. Cancel any month.
+          No per-minute surprises. Cancel anytime after 90 days. Costs less than
+          one missed job.
         </p>
       </section>
 
@@ -85,8 +90,16 @@ export default function PricingPage() {
                     /mo
                   </span>
                 </div>
-                <div className="mb-[26px] mt-2 font-mono text-[12px] font-semibold tracking-[0.06em] text-acc-dim">
+                <div className="mt-2 font-mono text-[12px] font-semibold tracking-[0.06em] text-acc-dim">
                   + {tier.setup} one-time setup
+                </div>
+                <div
+                  className={
+                    "mb-[24px] mt-[10px] text-[13px] font-medium leading-[1.45] " +
+                    (popular ? "text-white/70" : "text-mute")
+                  }
+                >
+                  {tier.valueLine}
                 </div>
                 <div
                   className={
@@ -128,6 +141,10 @@ export default function PricingPage() {
             );
           })}
         </div>
+        <p className="mx-auto mt-9 max-w-[620px] text-center text-[15px] leading-[1.6] text-body">
+          The average HVAC replacement runs $8,000 to $15,000. Restoration jobs
+          run higher. One missed call costs more than a year of this.
+        </p>
       </section>
 
       {/* Comparison table */}
@@ -172,6 +189,14 @@ export default function PricingPage() {
             ))}
           </div>
         </div>
+      </section>
+
+      {/* Pricing FAQ */}
+      <section className="relative mx-auto max-w-[760px] px-6 pb-14 md:px-10">
+        <h2 className="mb-7 text-center font-display text-[28px] font-extrabold tracking-[-0.03em] text-ink sm:text-[34px]">
+          Common questions
+        </h2>
+        <FaqAccordion faqs={PRICING_FAQS} />
       </section>
 
       {/* Billing FAQ */}

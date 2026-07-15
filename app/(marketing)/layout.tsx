@@ -7,7 +7,7 @@ export default function MarketingLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-bg">
+    <div className="relative min-h-screen overflow-x-clip bg-bg">
       {/* Signature hazard stripe */}
       <div className="hazard-stripe relative z-[60] h-1" />
       {/* Blueprint grid, faded via CSS mask */}

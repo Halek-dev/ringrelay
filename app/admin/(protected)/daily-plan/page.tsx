@@ -2,19 +2,21 @@ import { DailyPlan } from "@/components/admin/daily-plan";
 import { requireProfile } from "@/lib/auth";
 import {
   getWeekPlan,
+  getTodayPlan,
+  getWeekTotals,
   getStreak,
-  getWeekPipelineStats,
 } from "@/lib/data/daily-plan";
 
 export const dynamic = "force-dynamic";
 
 export default async function DailyPlanPage() {
-  const profile = await requireProfile();
-  const [week, streak, pipeline] = await Promise.all([
-    getWeekPlan(profile.id),
-    getStreak(profile.id),
-    getWeekPipelineStats(),
+  await requireProfile();
+  const [week, today, totals, streak] = await Promise.all([
+    getWeekPlan(),
+    getTodayPlan(),
+    getWeekTotals(),
+    getStreak(),
   ]);
 
-  return <DailyPlan week={week} streak={streak} pipeline={pipeline} />;
+  return <DailyPlan week={week} today={today} totals={totals} streak={streak} />;
 }

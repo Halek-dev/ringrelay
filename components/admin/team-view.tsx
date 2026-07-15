@@ -105,7 +105,7 @@ function MemberRow({ member, isSelf }: { member: Profile; isSelf: boolean }) {
             {initials(member)}
           </span>
           <span className="text-[14px] font-bold text-ink">
-            {member.full_name || "—"}
+            {member.full_name || "-"}
             {isSelf && <span className="ml-2 text-[12px] font-medium text-mute">(you)</span>}
           </span>
         </div>

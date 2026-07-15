@@ -5,6 +5,7 @@ import {
   CHAT_MAX_TOKENS,
   CHAT_MODEL,
   buildSystemPrompt,
+  stripDashes,
   validatePhone,
   type BookingInput,
 } from "@/lib/demo/config";
@@ -94,7 +95,7 @@ export async function POST(request: Request) {
               : /^([\s\S]*?[.!?,;:—–-])(\s|$)/;
             const m = buffer.match(boundary);
             if (m) {
-              const seg = m[1].trim();
+              const seg = stripDashes(m[1].trim());
               buffer = buffer.slice(m[0].length);
               if (seg) {
                 send({ t: "sentence", text: seg });
@@ -110,7 +111,7 @@ export async function POST(request: Request) {
             if (!firstSent && buffer.length >= 40) {
               const cut = buffer.lastIndexOf(" ", 40);
               if (cut > 12) {
-                const seg = buffer.slice(0, cut).trim();
+                const seg = stripDashes(buffer.slice(0, cut).trim());
                 buffer = buffer.slice(cut + 1);
                 if (seg) {
                   send({ t: "sentence", text: seg });
@@ -130,7 +131,7 @@ export async function POST(request: Request) {
         });
 
         const final = await s.finalMessage();
-        const rest = buffer.trim();
+        const rest = stripDashes(buffer.trim());
         if (rest) send({ t: "sentence", text: rest });
         return final;
       }

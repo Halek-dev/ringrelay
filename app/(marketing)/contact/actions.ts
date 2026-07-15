@@ -50,7 +50,7 @@ export async function submitContact(
       recent?.created_at &&
       Date.now() - new Date(recent.created_at).getTime() < RATE_LIMIT_MS
     ) {
-      return fail("You just submitted a request — give it a minute before retrying.");
+      return fail("You just submitted a request. Give it a minute before retrying.");
     }
   } catch {
     // If the service role isn't configured, skip the rate-limit rather than

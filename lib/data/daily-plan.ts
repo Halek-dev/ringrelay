@@ -1,7 +1,15 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import type { DailyTask, DailyTaskProgress, LeadStatus } from "@/lib/db-types";
-import type { PlanDay, PlanTask, WeekSummary } from "@/lib/plan-types";
+import type { LeadStatus } from "@/lib/db-types";
+import {
+  DAILY_GOALS,
+  emptyCounts,
+  isDayComplete,
+  type PlanCounts,
+  type PlanDay,
+  type PlanMetricKey,
+  type WeekTotals,
+} from "@/lib/plan-types";
 import {
   addDays,
   shortLabel,
@@ -12,152 +20,153 @@ import {
   weekdayFull,
 } from "@/lib/date";
 
-export type { PlanDay, PlanTask, WeekSummary };
-export { summarizePlan } from "@/lib/plan-types";
+export type { PlanDay, WeekTotals };
+export { DAILY_GOALS };
 
-// A task applies to a given weekday if it's an every-day task (null) or matches.
-function applies(task: DailyTask, weekday: number): boolean {
-  return task.day_of_week === null || task.day_of_week === weekday;
+/** A lead counts as "moved forward" once its status leaves new / in_progress. */
+const OPEN_STATUSES: LeadStatus[] = ["new", "in_progress"];
+function isMovedForward(status: LeadStatus): boolean {
+  return !OPEN_STATUSES.includes(status);
 }
 
-async function fetchActiveTasks(
-  supabase: ReturnType<typeof createClient>,
-): Promise<DailyTask[]> {
-  const { data, error } = await supabase
-    .from("daily_tasks")
-    .select("*")
-    .eq("is_active", true)
-    .order("sort_order", { ascending: true });
-  if (error) throw new Error(error.message);
-  return (data ?? []) as DailyTask[];
+type DerivedBuckets = Map<string, PlanCounts>;
+
+function bump(buckets: DerivedBuckets, dateISO: string, key: PlanMetricKey) {
+  const c = buckets.get(dateISO) ?? emptyCounts();
+  c[key] += 1;
+  buckets.set(dateISO, c);
 }
 
-/** The current week's plan for one user, Monday→Sunday, with their progress. */
-export async function getWeekPlan(
-  profileId: string,
-  ref = new Date(),
-): Promise<PlanDay[]> {
+/**
+ * Derive per-day counts for [since, now] from real rows: leads created, touches
+ * logged, and leads whose status moved forward. Resilient to a missing
+ * outreach_log table so the page still renders before migration 0004 is run.
+ */
+async function deriveBuckets(since: Date): Promise<DerivedBuckets> {
   const supabase = createClient();
+  const sinceISO = new Date(since).toISOString();
+  const buckets: DerivedBuckets = new Map();
+
+  // Leads: created (leads_added) and last-changed (qualified) within the window.
+  // updated_at >= created_at, so filtering on updated_at is a superset that also
+  // captures every lead created in the window.
+  const { data: leads, error: leadsErr } = await supabase
+    .from("leads")
+    .select("created_at,updated_at,status")
+    .gte("updated_at", sinceISO);
+  if (leadsErr) throw new Error(leadsErr.message);
+
+  for (const l of leads ?? []) {
+    const createdISO = toISODate(new Date(l.created_at as string));
+    if (new Date(l.created_at as string) >= since) {
+      bump(buckets, createdISO, "leads_added");
+    }
+    if (isMovedForward(l.status as LeadStatus)) {
+      bump(buckets, toISODate(new Date(l.updated_at as string)), "qualified");
+    }
+  }
+
+  // Touches: one row per logged outreach.
+  const { data: touches } = await supabase
+    .from("outreach_log")
+    .select("sent_at")
+    .gte("sent_at", sinceISO);
+  for (const t of touches ?? []) {
+    bump(buckets, toISODate(new Date(t.sent_at as string)), "touches");
+  }
+
+  return buckets;
+}
+
+/** The current week's derived plan, Monday to Sunday. */
+export async function getWeekPlan(ref = new Date()): Promise<PlanDay[]> {
   const dates = weekDates(ref);
-  const tasks = await fetchActiveTasks(supabase);
-
-  const { data: progressRows, error } = await supabase
-    .from("daily_task_progress")
-    .select("*")
-    .eq("profile_id", profileId)
-    .gte("date", toISODate(dates[0]))
-    .lte("date", toISODate(dates[6]));
-  if (error) throw new Error(error.message);
-
-  const pmap = new Map<string, DailyTaskProgress>();
-  (progressRows as DailyTaskProgress[] | null)?.forEach((p) =>
-    pmap.set(`${p.task_id}|${p.date}`, p),
-  );
-
+  const buckets = await deriveBuckets(dates[0]);
   const todayISO = toISODate(new Date());
 
   return dates.map((d) => {
-    const wd = d.getDay();
     const dISO = toISODate(d);
-    const dayTasks: PlanTask[] = tasks
-      .filter((t) => applies(t, wd))
-      .map((t) => {
-        const p = pmap.get(`${t.id}|${dISO}`);
-        return {
-          taskId: t.id,
-          label: t.title,
-          target: t.target_count,
-          done: p?.completed_count ?? 0,
-          isDone: p?.is_done ?? false,
-        };
-      });
     return {
       abbrev: weekdayAbbrev(d),
       label: weekdayFull(d),
       dateISO: dISO,
       dateShort: shortLabel(d),
       isToday: dISO === todayISO,
-      tasks: dayTasks,
-      complete: dayTasks.length > 0 && dayTasks.every((t) => t.isDone),
+      isFuture: dISO > todayISO,
+      counts: buckets.get(dISO) ?? emptyCounts(),
     };
   });
 }
 
-/** Today's plan day (for the dashboard). */
-export async function getTodayPlan(profileId: string): Promise<PlanDay> {
-  const week = await getWeekPlan(profileId);
-  return week.find((d) => d.isToday) ?? week[0];
+/** Today's derived plan day (for the dashboard). */
+export async function getTodayPlan(): Promise<PlanDay> {
+  const week = await getWeekPlan();
+  return week.find((d) => d.isToday) ?? week[week.length - 1];
+}
+
+/** This week's roll-up: real touches, replies, demos, leads added, days done. */
+export async function getWeekTotals(ref = new Date()): Promise<WeekTotals> {
+  const supabase = createClient();
+  const weekStart = startOfWeekMonday(ref);
+  const weekStartISO = new Date(weekStart).toISOString();
+  const week = await getWeekPlan(ref);
+
+  let leadsAdded = 0;
+  let touches = 0;
+  for (const d of week) {
+    if (d.isFuture) continue;
+    leadsAdded += d.counts.leads_added;
+    touches += d.counts.touches;
+  }
+  const daysComplete = week.filter(
+    (d) => !d.isFuture && isDayComplete(d.counts),
+  ).length;
+
+  // Replies: derived from outreach_log.replied. Resilient to a missing table.
+  const { count: repliesCount } = await supabase
+    .from("outreach_log")
+    .select("id", { count: "exact", head: true })
+    .eq("replied", true)
+    .gte("sent_at", weekStartISO);
+
+  // Demos booked this week.
+  const { count: demosCount, error: demosErr } = await supabase
+    .from("leads")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "demo_booked")
+    .gte("updated_at", weekStartISO);
+  if (demosErr) throw new Error(demosErr.message);
+
+  return {
+    leadsAdded,
+    touches,
+    replies: repliesCount ?? 0,
+    demos: demosCount ?? 0,
+    daysComplete,
+  };
 }
 
 /**
- * Consecutive days (ending today or yesterday) where the user completed all of
- * that day's active tasks. Looks back up to 90 days.
+ * Consecutive days (ending today or yesterday) where every daily goal was met,
+ * derived from real activity. Looks back up to 60 days.
  */
-export async function getStreak(profileId: string): Promise<number> {
-  const supabase = createClient();
-  const tasks = await fetchActiveTasks(supabase);
-
+export async function getStreak(): Promise<number> {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const start = addDays(today, -90);
+  const buckets = await deriveBuckets(addDays(today, -60));
 
-  const { data, error } = await supabase
-    .from("daily_task_progress")
-    .select("task_id,date,is_done")
-    .eq("profile_id", profileId)
-    .gte("date", toISODate(start))
-    .lte("date", toISODate(today));
-  if (error) throw new Error(error.message);
+  const complete = (d: Date): boolean =>
+    isDayComplete(buckets.get(toISODate(d)) ?? emptyCounts());
 
-  const doneByDate = new Map<string, Set<string>>();
-  (data as Pick<DailyTaskProgress, "task_id" | "date" | "is_done">[] | null)?.forEach(
-    (r) => {
-      if (!r.is_done) return;
-      if (!doneByDate.has(r.date)) doneByDate.set(r.date, new Set());
-      doneByDate.get(r.date)!.add(r.task_id);
-    },
-  );
-
-  const isComplete = (d: Date): boolean => {
-    const applicable = tasks.filter((t) => applies(t, d.getDay()));
-    if (applicable.length === 0) return false;
-    const done = doneByDate.get(toISODate(d)) ?? new Set<string>();
-    return applicable.every((t) => done.has(t.id));
-  };
-
-  // The streak may end today (if done) or yesterday (today still in progress).
+  // The streak may end today (if already done) or yesterday (today in progress).
   let cursor = new Date(today);
-  if (!isComplete(cursor)) cursor = addDays(cursor, -1);
+  if (!complete(cursor)) cursor = addDays(cursor, -1);
 
   let streak = 0;
-  for (let i = 0; i < 90; i++) {
-    if (!isComplete(cursor)) break;
+  for (let i = 0; i < 60; i++) {
+    if (!complete(cursor)) break;
     streak += 1;
     cursor = addDays(cursor, -1);
   }
   return streak;
-}
-
-/** Pipeline stats for the current week's summary bar. */
-export async function getWeekPipelineStats(
-  ref = new Date(),
-): Promise<{ demos: number; replies: number }> {
-  const supabase = createClient();
-  const startISO = toISODate(startOfWeekMonday(ref));
-
-  const countByStatus = async (status: LeadStatus) => {
-    const { count, error } = await supabase
-      .from("leads")
-      .select("id", { count: "exact", head: true })
-      .eq("status", status)
-      .gte("updated_at", startISO);
-    if (error) throw new Error(error.message);
-    return count ?? 0;
-  };
-
-  const [demos, replies] = await Promise.all([
-    countByStatus("demo_booked"),
-    countByStatus("replied"),
-  ]);
-  return { demos, replies };
 }

@@ -15,11 +15,34 @@ export type LeadIndustry =
 
 export type LeadStatus =
   | "new"
+  | "in_progress"
+  | "qualified"
+  | "killed"
   | "contacted"
   | "replied"
   | "demo_booked"
   | "won"
   | "lost";
+
+// Funnel outputs
+export type LeadTier = "hot" | "warm" | "cool" | "skip";
+// Each key is a funnel step; the value is the chosen outcome id for that step.
+export type QualificationAnswers = Partial<Record<string, string>>;
+
+// Outreach log
+export type TouchType = "first_touch" | "follow_up_1" | "follow_up_2";
+export type OutreachChannel = "email" | "sms" | "dm" | "loom";
+export type OutreachLog = {
+  id: string;
+  lead_id: string;
+  profile_id: string;
+  touch_type: TouchType;
+  channel: OutreachChannel;
+  sent_at: string;
+  replied: boolean;
+  replied_at: string | null;
+  created_at: string;
+};
 
 export type ClientPlan = "starter" | "pro" | "multi";
 export type SetupStatus = "onboarding" | "live";
@@ -61,6 +84,11 @@ export type Lead = {
   next_action: string | null;
   notes: string | null;
   owner_id: string | null;
+  score: number | null;
+  tier: LeadTier | null;
+  qualification: QualificationAnswers;
+  killed_at_step: number | null;
+  kill_reason: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -94,28 +122,6 @@ export type OnboardingStep = {
   updated_at: string;
 };
 
-export type DailyTask = {
-  id: string;
-  title: string;
-  target_count: number;
-  day_of_week: number | null; // 0 (Sun) - 6 (Sat); null = every day
-  sort_order: number;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-};
-
-export type DailyTaskProgress = {
-  id: string;
-  task_id: string;
-  profile_id: string;
-  date: string; // YYYY-MM-DD
-  completed_count: number;
-  is_done: boolean;
-  created_at: string;
-  updated_at: string;
-};
-
 export type OutreachTemplate = {
   id: string;
   name: string;
@@ -143,6 +149,9 @@ export type ContactSubmission = {
 
 export const LEAD_STATUS_LABEL: Record<LeadStatus, string> = {
   new: "New",
+  in_progress: "In Progress",
+  qualified: "Qualified",
+  killed: "Killed",
   contacted: "Contacted",
   replied: "Replied",
   demo_booked: "Demo Booked",
@@ -152,12 +161,35 @@ export const LEAD_STATUS_LABEL: Record<LeadStatus, string> = {
 
 export const LEAD_STATUS_ORDER: LeadStatus[] = [
   "new",
+  "in_progress",
+  "qualified",
   "contacted",
   "replied",
   "demo_booked",
   "won",
   "lost",
+  "killed",
 ];
+
+export const TIER_LABEL: Record<LeadTier, string> = {
+  hot: "Hot",
+  warm: "Warm",
+  cool: "Cool",
+  skip: "Skip",
+};
+
+export const TOUCH_TYPE_LABEL: Record<TouchType, string> = {
+  first_touch: "First touch",
+  follow_up_1: "Follow-up 1",
+  follow_up_2: "Follow-up 2",
+};
+
+export const OUTREACH_CHANNEL_LABEL: Record<OutreachChannel, string> = {
+  email: "Email",
+  sms: "SMS",
+  dm: "DM",
+  loom: "Loom",
+};
 
 export const INDUSTRY_LABEL: Record<LeadIndustry, string> = {
   hvac: "HVAC",

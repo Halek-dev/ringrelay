@@ -86,7 +86,7 @@ export function RoiCalculator() {
             <strong className="text-white">
               {recoveredJobsPerMonth.toFixed(1)} jobs a month
             </strong>{" "}
-            Ring Relay could book while you&apos;re on site — for a flat monthly
+            Ring Relay could book while you&apos;re on site, for a flat monthly
             fee that&apos;s a fraction of it.
           </p>
           <div className="mt-6">

@@ -235,7 +235,7 @@ function NewTemplateDialog() {
               <span className="text-[12.5px] font-bold text-ink">Name</span>
               <input
                 className={inputCls}
-                placeholder="First-touch — referral angle"
+                placeholder="First touch: referral angle"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 required

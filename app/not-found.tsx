@@ -1,8 +1,7 @@
 import Link from "next/link";
-import { Phone } from "lucide-react";
+import { Mic } from "lucide-react";
 import { Logo } from "@/components/site/logo";
 import { PrimaryCta } from "@/components/site/buttons";
-import { AGENCY } from "@/lib/mock-data";
 
 export default function NotFound() {
   return (
@@ -32,13 +31,13 @@ export default function NotFound() {
 
         <div className="mt-9 flex flex-col items-center gap-4 sm:flex-row">
           <PrimaryCta href="/">Back to home</PrimaryCta>
-          <a
-            href={AGENCY.demoPhoneHref}
+          <Link
+            href="/demo"
             className="inline-flex items-center gap-2 text-[15px] font-bold text-acc-dim hover:text-acc"
           >
-            <Phone size={16} strokeWidth={2.2} />
-            Or call the AI: {AGENCY.demoPhone}
-          </a>
+            <Mic size={16} strokeWidth={2.2} />
+            Or try the live demo
+          </Link>
         </div>
       </main>
     </div>

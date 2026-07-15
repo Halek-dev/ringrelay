@@ -176,7 +176,7 @@ export function ClientsView({
                       {c.business_name}
                     </div>
                     <div className="text-[12.5px] text-mute">
-                      {c.contact_name ?? "—"}
+                      {c.contact_name ?? "-"}
                     </div>
                   </td>
                   <td className="px-5 py-[14px] text-[14px] font-semibold text-body">
@@ -251,7 +251,7 @@ export function ClientsView({
                       {active.business_name}
                     </Dialog.Title>
                     <p className="mt-[2px] text-[13.5px] text-body">
-                      {active.contact_name ?? "—"}
+                      {active.contact_name ?? "-"}
                     </p>
                   </div>
                   <Dialog.Close className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-line2 text-mute hover:text-ink">

@@ -1,7 +1,9 @@
 import { cn } from "@/lib/utils";
 import {
   LEAD_STATUS_LABEL,
+  TIER_LABEL,
   type LeadStatus,
+  type LeadTier,
   type SetupStatus,
 } from "@/lib/db-types";
 
@@ -81,6 +83,9 @@ export function ProgressBar({
 
 const LEAD_STATUS_STYLES: Record<LeadStatus, string> = {
   new: "border-line2 bg-panel text-body",
+  in_progress: "border-ai-line bg-ai-bg2 text-acc-dim",
+  qualified: "border-ok/35 bg-ok/[0.08] text-ok",
+  killed: "border-line2 bg-panel text-mute",
   contacted: "border-line2 bg-chip text-chip-ink",
   replied: "border-ai-line bg-ai-bg2 text-acc-dim",
   demo_booked: "border-acc/40 bg-acc/10 text-acc-dim",
@@ -98,6 +103,33 @@ export function LeadBadge({ status }: { status: LeadStatus }) {
     >
       <span className="h-[5px] w-[5px] rounded-full bg-current opacity-70" />
       {LEAD_STATUS_LABEL[status]}
+    </span>
+  );
+}
+
+const TIER_STYLES: Record<LeadTier, string> = {
+  hot: "border-acc/50 bg-acc/10 text-acc-dim",
+  warm: "border-ai-line bg-ai-bg2 text-acc-dim",
+  cool: "border-line2 bg-chip text-chip-ink",
+  skip: "border-line2 bg-panel text-mute",
+};
+
+const TIER_MARK: Record<LeadTier, string> = {
+  hot: "🔥",
+  warm: "•",
+  cool: "•",
+  skip: "×",
+};
+
+export function TierBadge({ tier }: { tier: LeadTier }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-[5px] whitespace-nowrap rounded-full border px-[9px] py-[2px] text-[11.5px] font-bold uppercase tracking-[0.04em]",
+        TIER_STYLES[tier],
+      )}
+    >
+      {TIER_MARK[tier]} {TIER_LABEL[tier]}
     </span>
   );
 }

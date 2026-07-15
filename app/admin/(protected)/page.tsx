@@ -21,8 +21,8 @@ export default async function AdminDashboard() {
   const [kpis, activity, today, streak] = await Promise.all([
     getKpis(),
     getActivity(),
-    getTodayPlan(profile.id),
-    getStreak(profile.id),
+    getTodayPlan(),
+    getStreak(),
   ]);
 
   const firstName = (profile.full_name || profile.email || "there").split(
@@ -77,10 +77,10 @@ export default async function AdminDashboard() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_1fr]">
         <Panel>
           <PanelHeader
-            title={`Today's tasks · ${today.label}`}
-            subtitle="Your daily outreach playbook — check them off as you go."
+            title={`Today's goals · ${today.label}`}
+            subtitle="Derived from real activity. Do the work and they fill in."
           />
-          <TodaysTasks tasks={today.tasks} dateISO={today.dateISO} />
+          <TodaysTasks today={today} />
         </Panel>
 
         <Panel>

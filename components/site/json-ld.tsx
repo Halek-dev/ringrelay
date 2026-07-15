@@ -16,7 +16,6 @@ export function JsonLd({ faqs }: { faqs: Faq[] }) {
       description:
         "AI voice receptionist that answers calls 24/7, books appointments, and texts summaries for HVAC, plumbing, and water-damage restoration businesses.",
       url: SITE_URL,
-      telephone: AGENCY.demoPhone,
       email: AGENCY.email,
       areaServed: ["US", "CA"],
       slogan: AGENCY.tagline,

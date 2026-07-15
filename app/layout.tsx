@@ -32,9 +32,9 @@ const jetbrains = JetBrains_Mono({
 
 // TODO(phase 2): point metadataBase at the real production domain.
 const SITE_URL = "https://ringrelay.com";
-const TITLE = "Ring Relay — AI receptionist for home-services trades";
+const TITLE = "Ring Relay: AI receptionist for home-services trades";
 const DESCRIPTION =
-  "Stop losing jobs to missed calls. Ring Relay answers every call 24/7, books the appointment, and texts you the details — even when you're on a jobsite.";
+  "Stop losing jobs to missed calls. Ring Relay answers every call 24/7, books the appointment, and texts you the details, even when you're on a jobsite.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

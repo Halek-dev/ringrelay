@@ -5,7 +5,7 @@ import { CtaBand } from "@/components/site/cta-band";
 import { CALL_LIFECYCLE } from "@/lib/mock-data";
 
 export const metadata: Metadata = {
-  title: "How It Works — Ring Relay",
+  title: "How It Works",
   description:
     "One call, start to finish. Exactly what happens when a customer calls your number and you're on a job.",
 };

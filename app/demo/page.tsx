@@ -6,7 +6,7 @@ import { VoiceDemo } from "@/components/demo/voice-demo";
 import { RECEPTIONIST } from "@/lib/demo/config";
 
 export const metadata: Metadata = {
-  title: "Talk to our AI receptionist — Ring Relay",
+  title: "Talk to our AI receptionist",
   description:
     "Talk to a live AI receptionist right in your browser. It answers as a sample home-services company, qualifies the call, and books the appointment.",
   robots: { index: false, follow: false },
@@ -41,8 +41,8 @@ export default function DemoPage() {
           </h1>
           <p className="mx-auto mt-4 max-w-[560px] text-pretty text-[17px] leading-[1.6] text-body">
             It answers as <strong className="text-ink">{RECEPTIONIST.business}</strong>,
-            a sample home-services company. Talk to it like a real customer —
-            describe a problem and let it book you in.
+            a sample home-services company. Talk to it like a real customer.
+            Describe a problem and let it book you in.
           </p>
         </div>
 

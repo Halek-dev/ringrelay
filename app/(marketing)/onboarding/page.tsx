@@ -6,7 +6,7 @@ import { CtaBand } from "@/components/site/cta-band";
 import { ONBOARDING_STEPS, ONBOARDING_CHECKLIST } from "@/lib/mock-data";
 
 export const metadata: Metadata = {
-  title: "Onboarding — Ring Relay",
+  title: "Onboarding",
   description:
     "From kickoff to answering live in about five business days. Here's the five-step onboarding journey.",
 };

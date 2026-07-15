@@ -21,7 +21,7 @@ export function PrimaryCta({
     <Link
       href={href}
       className={cn(
-        "group inline-flex items-center gap-[14px] rounded-full bg-acc pl-[30px] pr-[10px] py-[10px] text-[16.5px] font-bold text-white",
+        "group inline-flex items-center justify-center gap-[14px] whitespace-nowrap rounded-full bg-acc pl-[30px] pr-[10px] py-[10px] text-[16.5px] font-bold text-white",
         "shadow-[0_12px_32px_rgba(234,88,12,0.32)] transition-all duration-200",
         "hover:-translate-y-0.5 hover:bg-acc-b hover:shadow-[0_18px_44px_rgba(234,88,12,0.42)]",
         "active:translate-y-0 active:scale-[0.98]",
@@ -53,7 +53,7 @@ export function SecondaryCta({
     <Link
       href={href}
       className={cn(
-        "inline-flex items-center gap-[10px] rounded-full border-[1.5px] border-line2 bg-transparent px-[30px] py-[15px] text-[16px] font-semibold text-ink transition-all duration-200",
+        "inline-flex items-center justify-center gap-[10px] whitespace-nowrap rounded-full border-[1.5px] border-line2 bg-transparent px-[30px] py-[15px] text-[16px] font-semibold text-ink transition-all duration-200",
         "hover:-translate-y-0.5 hover:border-acc hover:bg-ai-bg2 hover:text-acc-dim",
         "active:translate-y-0 active:scale-[0.98]",
         className,

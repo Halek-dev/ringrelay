@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Phone } from "lucide-react";
+import { Mic } from "lucide-react";
 import { Logo } from "@/components/site/logo";
 import { AGENCY, NAV_LINKS } from "@/lib/mock-data";
 
@@ -13,13 +13,13 @@ export function SiteFooter() {
             <p className="mt-4 text-[15px] leading-relaxed text-body">
               {AGENCY.tagline}
             </p>
-            <a
-              href={AGENCY.demoPhoneHref}
-              className="mt-4 inline-flex items-center gap-2 text-[14.5px] font-bold text-acc-dim"
+            <Link
+              href="/demo"
+              className="mt-4 inline-flex items-center gap-2 text-[14.5px] font-bold text-acc-dim hover:text-acc"
             >
-              <Phone size={15} strokeWidth={2.2} className="text-acc" />
-              {AGENCY.demoPhone}
-            </a>
+              <Mic size={15} strokeWidth={2.2} className="text-acc" />
+              Try the live demo
+            </Link>
           </div>
 
           <div className="flex gap-16">
@@ -28,6 +28,14 @@ export function SiteFooter() {
                 Product
               </div>
               <ul className="flex flex-col gap-3">
+                <li>
+                  <Link
+                    href="/demo"
+                    className="text-[15px] font-semibold text-acc-dim hover:text-acc"
+                  >
+                    Try the Demo
+                  </Link>
+                </li>
                 {NAV_LINKS.map((l) => (
                   <li key={l.href}>
                     <Link
