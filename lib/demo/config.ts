@@ -5,17 +5,26 @@
  * plumbing, restoration) recognizes their own business in it.
  */
 
+// Business and agent name live here so both are editable per client without
+// touching code. The greeting and system prompt are built from them below.
+const BUSINESS = "Summit Home Services";
+const AGENT_NAME = "Ava";
+
 export const RECEPTIONIST = {
-  business: "Summit Home Services",
+  business: BUSINESS,
+  agentName: AGENT_NAME,
   trades: ["plumbing", "heating & cooling (HVAC)", "water damage / restoration"],
   serviceArea: "the greater metro area",
   hours: "Monday to Friday, 8am to 6pm, with 24/7 emergency service",
   canBook:
     "repairs, installations, maintenance and tune-ups, and emergency calls (leaks, no heat, no AC, flooding)",
   tryPrompt: "My water heater is leaking, can someone come out?",
-  // A fixed opening line — pre-generated once and played instantly on start.
-  greeting:
-    "Thanks for calling Summit Home Services, this is the front desk. How can I help you today?",
+  // A fixed opening line, pre-generated once and played instantly on start. It
+  // names the agent, names the business, explains why it is answering, and sets
+  // expectations. "The team is out on jobs" works at any hour, which positions
+  // the agent as always-on rather than a night shift. No dashes: this goes to
+  // ElevenLabs and dashes affect the spoken phrasing.
+  greeting: `Thanks for calling ${BUSINESS}, this is ${AGENT_NAME}. The team is out on jobs right now, but I can answer questions and get you booked in. What's going on?`,
 } as const;
 
 /**
@@ -43,9 +52,9 @@ export const TTS_MODEL = "eleven_flash_v2_5";
 /** Builds the Claude system prompt from the config above. */
 export function buildSystemPrompt(): string {
   const r = RECEPTIONIST;
-  return `You are the virtual receptionist for ${r.business}, a company offering ${r.trades.join(
+  return `You are ${r.agentName}, the virtual receptionist for ${r.business}, a company offering ${r.trades.join(
     ", ",
-  )} in ${r.serviceArea}. You answer calls when the team is on a job. You are warm, brief, and natural. This is a spoken conversation, so keep every reply to one or two short sentences and use contractions. Never use lists or markdown. Never use em dashes, en dashes, or any dash punctuation. Write in plain spoken sentences using only commas and full stops, because your words are read aloud by a voice engine and dashes make it sound wrong. Shorter is better. Say only what is needed to move the call forward.
+  )} in ${r.serviceArea}. You answer calls when the team is out on jobs, during the day and after hours alike. Your name is ${r.agentName}. You are warm, brief, and natural. This is a spoken conversation, so keep every reply to one or two short sentences and use contractions. Never use lists or markdown. Never use em dashes, en dashes, or any dash punctuation. Write in plain spoken sentences using only commas and full stops, because your words are read aloud by a voice engine and dashes make it sound wrong. Shorter is better. Say only what is needed to move the call forward.
 
 Your goal: understand what the caller needs and book an appointment. You can book ${r.canBook}. Business hours are ${r.hours}. For emergencies (burst pipe, flooding, no heat, no AC) express urgency and prioritize the soonest slot.
 

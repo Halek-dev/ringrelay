@@ -79,9 +79,15 @@ export const FUNNEL_STEPS: FunnelStep[] = [
     step: 5,
     title: "Call test",
     instruction:
-      "Call the number once during business hours from a blocked line. Do not leave a message. What happened?",
+      "Call the number once during business hours from a blocked line. Don't leave a message. What happened? If an AI or automated voice answers, note whether it says it only covers after hours.",
     outcomes: [
       { value: "voicemail", label: "Voicemail (hottest)", points: 30 },
+      // A prospect already running an AI receptionist has proven pain and an
+      // existing budget, which is worth more than a live human answering (0)
+      // and more than a generic answering service (15). It scores below a
+      // confirmed missed call (30) because there is no direct proof of a lost
+      // lead. It is a switching sale, not a discovery sale.
+      { value: "ai_receptionist", label: "AI receptionist already (competitor)", points: 18 },
       { value: "answering_service", label: "Answering service", points: 15 },
       { value: "answered_live", label: "Answered live fast", points: 0 },
     ],
@@ -213,3 +219,46 @@ export const TIER_PLAN: Record<LeadTier, TierPlan> = {
     templateHint: null,
   },
 };
+
+/* --- competitor (AI receptionist) switching pitch (Change 1) --- */
+
+export const AI_RECEPTIONIST = "ai_receptionist";
+
+/** True when the call test found a competitor AI receptionist. */
+export function isAiReceptionist(a: QualificationAnswers): boolean {
+  return a["call_test"] === AI_RECEPTIONIST;
+}
+
+export type SwitchingPlan = {
+  headline: string;
+  action: string;
+  opener: string;
+  templateCategory: "switching_pitch_after_hours" | "switching_pitch_quality";
+};
+
+/**
+ * A prospect already on an AI receptionist is a switching sale, not the usual
+ * missed-call pitch. The angle depends on whether their AI only covers after
+ * hours: if it does, their daytime calls are still going unanswered, which is
+ * the gap we sell into.
+ */
+export function switchingPlan(afterHoursOnly: boolean): SwitchingPlan {
+  if (afterHoursOnly) {
+    return {
+      headline: "Competitor switch: attack the daytime gap",
+      action:
+        "Their AI only covers after hours. Lead with the daytime gap, the calls that come in while the crew is on a job.",
+      opener:
+        "Called your line at 2pm and got Ruby, who told me she only handles after-hours. What happens to the calls that come in while your crew is on a roof at 2pm?",
+      templateCategory: "switching_pitch_after_hours",
+    };
+  }
+  return {
+    headline: "Competitor switch: sell on quality",
+    action:
+      "They already buy the category, so sell on quality, not on whether they need it.",
+    opener:
+      "Called your line and got your AI receptionist. Curious what made you go that route, and whether it's actually booking jobs or just taking messages.",
+    templateCategory: "switching_pitch_quality",
+  };
+}

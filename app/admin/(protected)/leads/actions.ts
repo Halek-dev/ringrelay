@@ -161,6 +161,51 @@ export async function markTouchReplied(
   return ok();
 }
 
+/**
+ * Save the competitor detail captured on the call-test step when a prospect is
+ * already running an AI receptionist. The after-hours flag drives which
+ * switching pitch we recommend; the greeting is kept on the lead's notes under
+ * a marker line so re-saving replaces it rather than piling up duplicates.
+ */
+const COMPETITOR_NOTE_MARK = "[Competitor AI]";
+
+export async function setCompetitorInfo(input: {
+  leadId: string;
+  afterHoursOnly: boolean;
+  greeting: string;
+}): Promise<ActionResult> {
+  await assertProfile();
+  const supabase = createClient();
+
+  const { data: row } = await supabase
+    .from("leads")
+    .select("notes")
+    .eq("id", input.leadId)
+    .single();
+
+  const prior = ((row?.notes as string | null) ?? "")
+    .split("\n")
+    .filter((line) => !line.startsWith(COMPETITOR_NOTE_MARK))
+    .join("\n")
+    .trim();
+  const greeting = input.greeting.trim();
+  const merged = greeting
+    ? `${prior ? prior + "\n" : ""}${COMPETITOR_NOTE_MARK} ${greeting}`
+    : prior;
+
+  const { error } = await supabase
+    .from("leads")
+    .update({
+      competitor_after_hours_only: input.afterHoursOnly,
+      notes: merged || null,
+    })
+    .eq("id", input.leadId);
+
+  if (error) return fail(error.message);
+  revalidatePath("/admin/leads");
+  return ok();
+}
+
 export async function updateLeadStatus(
   id: string,
   status: LeadStatus,

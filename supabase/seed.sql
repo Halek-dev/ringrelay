@@ -35,6 +35,14 @@ from (values
   (
     'Demo confirmation', 'demo_confirmation',
     'You are set, {{first_name}}. Demo confirmed for {{demo_time}}. Want a preview first? Try our AI receptionist right in your browser at {{demo_url}} and throw your hardest customer scenario at it. Talk soon. {{sender}}'
+  ),
+  (
+    'Switching pitch: after-hours gap (competitor)', 'switching_pitch_after_hours',
+    'Hi {{first_name}}, I called {{business}} at 2pm and got your AI receptionist, which told me it only handles after-hours. So what happens to the calls that come in while your crew is on a roof at 2pm? Those are still going unanswered. Ring Relay covers the whole day, not just the night shift. Worth a quick look?'
+  ),
+  (
+    'Switching pitch: quality (competitor)', 'switching_pitch_quality',
+    'Hey {{first_name}}, I called {{business}} and got your AI receptionist. Smart move, so I will skip the pitch on why you need one. Curious what made you go that route, and whether it is actually booking jobs or just taking messages. Ring Relay books straight into your calendar. Happy to show you the difference in 15 minutes.'
   )
 ) as v(name, category, body)
 where not exists (

@@ -56,7 +56,9 @@ export type TemplateCategory =
   | "first_touch"
   | "follow_up_1"
   | "follow_up_2"
-  | "demo_confirmation";
+  | "demo_confirmation"
+  | "switching_pitch_after_hours"
+  | "switching_pitch_quality";
 export type ContactStatus = "new" | "reviewed" | "converted";
 
 export type Profile = {
@@ -89,6 +91,7 @@ export type Lead = {
   qualification: QualificationAnswers;
   killed_at_step: number | null;
   kill_reason: string | null;
+  competitor_after_hours_only: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -220,6 +223,8 @@ export const TEMPLATE_CATEGORY_LABEL: Record<TemplateCategory, string> = {
   follow_up_1: "Follow-up 1",
   follow_up_2: "Follow-up 2",
   demo_confirmation: "Demo confirmation",
+  switching_pitch_after_hours: "Switching pitch (after hours)",
+  switching_pitch_quality: "Switching pitch (quality)",
 };
 
 export const ONBOARDING_STEP_LABEL: Record<OnboardingStepKey, string> = {
