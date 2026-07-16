@@ -44,6 +44,35 @@ export type OutreachLog = {
   created_at: string;
 };
 
+// Contact finder ("Find a way in")
+export type ContactChannelKind =
+  | "email_owner"
+  | "email_role"
+  | "email_guessed"
+  | "contact_form"
+  | "facebook"
+  | "linkedin"
+  | "instagram";
+
+export type ContactChannel = {
+  kind: ContactChannelKind;
+  value: string; // email address or URL
+  found: string; // how it was found, e.g. "mailto link", "obfuscated", "guessed"
+  verified: boolean; // false for guessed role emails
+};
+
+export type ContactResult = {
+  channels: ContactChannel[]; // already ranked, best first
+  ownerName: string | null;
+  sizeWarning: boolean;
+  sizeSignals: string[];
+  crawledPages: number;
+  failedPages: string[];
+  blockedByRobots: boolean;
+  startUrl: string;
+  ranAt: string;
+};
+
 export type ClientPlan = "starter" | "pro" | "multi";
 export type SetupStatus = "onboarding" | "live";
 export type OnboardingStepKey =
@@ -92,6 +121,12 @@ export type Lead = {
   killed_at_step: number | null;
   kill_reason: string | null;
   competitor_after_hours_only: boolean;
+  contact_form_url: string | null;
+  facebook_url: string | null;
+  linkedin_url: string | null;
+  owner_name: string | null;
+  contact_channels: ContactResult | null;
+  contact_found_at: string | null;
   created_at: string;
   updated_at: string;
 };

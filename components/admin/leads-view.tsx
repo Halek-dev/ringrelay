@@ -22,6 +22,14 @@ import {
   Pencil,
   Skull,
   Bot,
+  Facebook,
+  Linkedin,
+  Instagram,
+  Globe,
+  FileText,
+  ExternalLink,
+  AlertTriangle,
+  Loader2,
 } from "lucide-react";
 import { LeadBadge, TierBadge, ProgressBar } from "@/components/admin/ui";
 import { useToast } from "@/components/ui/toaster";
@@ -32,6 +40,12 @@ import {
   logTouch,
   setCompetitorInfo,
 } from "@/app/admin/(protected)/leads/actions";
+import { findContact } from "@/app/admin/(protected)/leads/contact-actions";
+import {
+  CHANNEL_LABEL,
+  bestChannel,
+  bestChannelLabel,
+} from "@/lib/contact/shared";
 import {
   INDUSTRY_LABEL,
   INDUSTRY_ORDER,
@@ -40,6 +54,9 @@ import {
   TIER_LABEL,
   TOUCH_TYPE_LABEL,
   OUTREACH_CHANNEL_LABEL,
+  type ContactChannel,
+  type ContactChannelKind,
+  type ContactResult,
   type Lead,
   type LeadIndustry,
   type LeadStatus,
@@ -397,9 +414,10 @@ function LeadRow({
       className="cursor-pointer border-b border-line last:border-b-0 hover:bg-panel/60 focus-visible:bg-panel/60"
     >
       <td className="px-5 py-[14px] text-[14px] font-bold text-ink">
-        <span className="inline-flex items-center gap-2">
+        <span className="inline-flex flex-wrap items-center gap-2">
           {lead.business_name}
           {isCompetitorLead(lead) && <CompetitorTag />}
+          <ContactChip lead={lead} />
         </span>
       </td>
       <td className="px-5 py-[14px] text-[14px] text-body">
@@ -722,6 +740,9 @@ function LeadDrawer({
         />
       )}
 
+      {/* Find a way in */}
+      <ContactFinderPanel lead={lead} />
+
       {/* Log touch + history */}
       <LogTouchPanel leadId={lead.id} touches={touches} disabled={status === "killed"} />
     </div>
@@ -952,6 +973,308 @@ function LogTouchPanel({
 
 function killReasonShort(reason: string): string {
   return reason.replace(/^Kill:\s*/, "");
+}
+
+/* ------------------------- find a way in (crawler) ------------------------- */
+
+function channelIcon(kind: ContactChannelKind) {
+  switch (kind) {
+    case "facebook":
+      return Facebook;
+    case "linkedin":
+      return Linkedin;
+    case "instagram":
+      return Instagram;
+    case "contact_form":
+      return FileText;
+    default:
+      return Mail;
+  }
+}
+
+/** Best-effort: pull a URL out of the lead's free-text notes. */
+function urlFromNotes(notes: string | null): string {
+  if (!notes) return "";
+  const m = notes.match(/https?:\/\/[^\s"')]+/i);
+  return m ? m[0] : "";
+}
+
+function ContactFinderPanel({ lead }: { lead: Lead }) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [pending, startTransition] = useTransition();
+  const [url, setUrl] = useState(
+    () => lead.contact_channels?.startUrl ?? urlFromNotes(lead.notes),
+  );
+  const [result, setResult] = useState<ContactResult | null>(
+    lead.contact_channels,
+  );
+
+  function run() {
+    if (!url.trim()) {
+      toast({ variant: "info", title: "Add a website URL to search." });
+      return;
+    }
+    startTransition(async () => {
+      const res = await findContact({ leadId: lead.id, url });
+      if (!res.ok) {
+        toast({ variant: "info", title: "Couldn't search", description: res.error });
+        return;
+      }
+      setResult(res.data);
+      toast({
+        title: "Contact search done",
+        description: `${res.data.channels.length} channel(s) found.`,
+      });
+      router.refresh();
+    });
+  }
+
+  return (
+    <div className="border-b border-line px-6 py-5">
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-mute">
+          Find a way in
+        </span>
+        {lead.contact_found_at && (
+          <span className="text-[11.5px] text-mute">
+            searched {new Date(lead.contact_found_at).toLocaleDateString()}
+          </span>
+        )}
+      </div>
+      <p className="mt-1 text-[12.5px] leading-[1.5] text-body">
+        Crawl the site for any viable channel, ranked. This finds something for
+        about half of small trades shops. When it does not, Facebook or a contact
+        form is the normal fallback, not a failure.
+      </p>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <div className="flex min-w-[200px] flex-1 items-center gap-2 rounded-[10px] border-[1.5px] border-line2 bg-card2 px-3 py-[9px]">
+          <Globe size={14} className="shrink-0 text-mute" />
+          <input
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="company-website.com"
+            className="w-full border-0 bg-transparent p-0 text-[13px] text-ink placeholder:text-mute focus:outline-none"
+            style={{ boxShadow: "none" }}
+          />
+        </div>
+        <button
+          type="button"
+          onClick={run}
+          disabled={pending}
+          className="inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-acc px-4 py-[9px] text-[13px] font-bold text-white hover:bg-acc-b disabled:opacity-60"
+        >
+          {pending ? (
+            <>
+              <Loader2 size={14} className="animate-spin" /> Crawling
+            </>
+          ) : (
+            <>
+              <Search size={14} /> {result ? "Re-crawl" : "Find contact"}
+            </>
+          )}
+        </button>
+      </div>
+
+      {pending && (
+        <p className="mt-3 text-[12.5px] text-mute">
+          Fetching the homepage and contact pages...
+        </p>
+      )}
+
+      {result && !pending && <ContactResults result={result} lead={lead} />}
+    </div>
+  );
+}
+
+function ContactResults({
+  result,
+  lead,
+}: {
+  result: ContactResult;
+  lead: Lead;
+}) {
+  const fbSearch = `https://www.facebook.com/search/top?q=${encodeURIComponent(
+    [lead.business_name, lead.city].filter(Boolean).join(" "),
+  )}`;
+  const hasRealChannel = result.channels.some((c) => c.kind !== "email_guessed");
+
+  return (
+    <div className="mt-4 flex flex-col gap-3">
+      {result.sizeWarning && (
+        <div className="flex items-start gap-2 rounded-[10px] border border-acc/40 bg-acc/[0.06] px-3 py-2 text-[12.5px] leading-[1.5] text-acc-dim">
+          <AlertTriangle size={14} className="mt-[2px] shrink-0" />
+          <span>
+            Size warning: this looks like a bigger operation with a staffed phone
+            room ({result.sizeSignals.join(", ")}). Consider killing at funnel
+            step 2.
+          </span>
+        </div>
+      )}
+
+      {result.blockedByRobots && (
+        <div className="rounded-[10px] border border-line2 bg-panel px-3 py-2 text-[12.5px] leading-[1.5] text-body">
+          The site&apos;s robots.txt asks crawlers not to read it, so the emails
+          below are guessed. Best fallback: message them on Facebook, or search
+          for their page by name.
+        </div>
+      )}
+
+      {result.ownerName && (
+        <div className="text-[13px]">
+          <span className="font-semibold text-ink">Owner:</span>{" "}
+          <span className="text-body">{result.ownerName}</span>
+        </div>
+      )}
+
+      {result.channels.length === 0 ? (
+        <div className="rounded-[10px] border border-line2 bg-panel px-3 py-3 text-[12.5px] leading-[1.5] text-body">
+          Nothing published on the site. That is normal for small shops.
+          Fallbacks: check their Google Business profile, or{" "}
+          <a
+            href={fbSearch}
+            target="_blank"
+            rel="noreferrer"
+            className="font-bold text-acc-dim hover:text-acc"
+          >
+            search Facebook by business name
+          </a>
+          .
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {result.channels.map((c, i) => (
+            <ChannelRow key={i} channel={c} />
+          ))}
+        </div>
+      )}
+
+      {!hasRealChannel && result.channels.length > 0 && (
+        <a
+          href={fbSearch}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1 text-[12.5px] font-bold text-acc-dim hover:text-acc"
+        >
+          <Facebook size={13} /> Search Facebook for their page{" "}
+          <ExternalLink size={11} />
+        </a>
+      )}
+
+      <p className="text-[11.5px] text-mute">
+        Crawled {result.crawledPages} page
+        {result.crawledPages === 1 ? "" : "s"}
+        {result.failedPages.length > 0
+          ? `, ${result.failedPages.length} failed`
+          : ""}
+        .
+      </p>
+    </div>
+  );
+}
+
+function ChannelRow({ channel }: { channel: ContactChannel }) {
+  const isEmail = channel.kind.startsWith("email");
+  const isFacebook = channel.kind === "facebook";
+  const Icon = channelIcon(channel.kind);
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-2 rounded-[10px] border px-3 py-2",
+        isFacebook
+          ? "border-[#1877F2]/45 bg-[#1877F2]/[0.06]"
+          : "border-line2 bg-card2",
+      )}
+    >
+      <span
+        className={cn(
+          "grid h-7 w-7 shrink-0 place-items-center rounded-full",
+          isFacebook ? "bg-[#1877F2] text-white" : "bg-panel text-body",
+        )}
+      >
+        <Icon size={14} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.05em] text-mute">
+            {CHANNEL_LABEL[channel.kind]}
+          </span>
+          {!channel.verified && (
+            <span className="rounded-full border border-line2 bg-panel px-[6px] py-[1px] text-[10px] font-semibold text-mute">
+              unverified
+            </span>
+          )}
+          <span className="text-[11px] text-mute">via {channel.found}</span>
+        </div>
+        {isEmail ? (
+          <div className="truncate text-[13.5px] font-semibold text-ink">
+            {channel.value}
+          </div>
+        ) : (
+          <a
+            href={channel.value}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex max-w-full items-center gap-1 truncate text-[13.5px] font-semibold text-acc-dim hover:text-acc"
+          >
+            <span className="truncate">{channel.value}</span>
+            <ExternalLink size={11} className="shrink-0" />
+          </a>
+        )}
+      </div>
+      {isEmail && <CopyBtn text={channel.value} />}
+    </div>
+  );
+}
+
+function CopyBtn({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard unavailable */
+    }
+  }
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      className={cn(
+        "inline-flex shrink-0 items-center gap-[4px] rounded-full border px-[10px] py-[4px] text-[11.5px] font-bold transition-colors",
+        copied
+          ? "border-ok/40 bg-ok/[0.08] text-ok"
+          : "border-line2 text-body hover:border-acc hover:text-acc",
+      )}
+    >
+      {copied ? <Check size={12} strokeWidth={2.6} /> : <Copy size={12} />}
+      {copied ? "Copied" : "Copy"}
+    </button>
+  );
+}
+
+/** List chip showing the best known way into a lead. */
+function ContactChip({ lead }: { lead: Lead }) {
+  const best = bestChannel(lead.contact_channels);
+  if (!best) return null;
+  const Icon = channelIcon(best.kind);
+  const isFb = best.kind === "facebook";
+  return (
+    <span
+      title={`Best way in: ${bestChannelLabel(lead.contact_channels)}`}
+      className={cn(
+        "inline-flex items-center gap-[3px] rounded-full border px-[7px] py-[1px] text-[10px] font-semibold",
+        isFb
+          ? "border-[#1877F2]/40 bg-[#1877F2]/[0.08] text-[#1877F2]"
+          : "border-line2 bg-card2 text-body",
+      )}
+    >
+      <Icon size={11} /> {bestChannelLabel(lead.contact_channels)}
+    </span>
+  );
 }
 
 const COMPETITOR_NOTE_MARK = "[Competitor AI]";
