@@ -5,6 +5,8 @@ import {
   JetBrains_Mono,
 } from "next/font/google";
 import "./globals.css";
+import { ConsentProvider } from "@/components/consent/consent-provider";
+import { AnalyticsLoader } from "@/components/consent/analytics-loader";
 
 // Display / headings
 const bricolage = Bricolage_Grotesque({
@@ -85,7 +87,11 @@ export default function RootLayout({
         >
           Skip to content
         </a>
-        {children}
+        <ConsentProvider>
+          {children}
+          {/* Loads only after the visitor opts in to analytics. */}
+          <AnalyticsLoader />
+        </ConsentProvider>
       </body>
     </html>
   );

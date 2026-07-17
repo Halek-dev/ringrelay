@@ -24,6 +24,7 @@ export const NAV_LINKS = [
   { index: "01", label: "How It Works", href: "/how-it-works" },
   { index: "02", label: "Pricing", href: "/pricing" },
   { index: "03", label: "Onboarding", href: "/onboarding" },
+  { index: "04", label: "Careers", href: "/careers" },
 ] as const;
 
 export const HERO = {
@@ -396,5 +397,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { label: "Outreach", href: "/admin/outreach", icon: "MessageSquareQuote" },
   { label: "Playbook", href: "/admin/playbook", icon: "BookOpen" },
   { label: "Testimonials", href: "/admin/testimonials", icon: "Star" },
+  { label: "Careers", href: "/admin/careers", icon: "Briefcase", ownerOnly: true },
+  { label: "Team CMS", href: "/admin/team-members", icon: "UserPlus", ownerOnly: true },
   { label: "Team", href: "/admin/team", icon: "UserCog", ownerOnly: true },
 ];

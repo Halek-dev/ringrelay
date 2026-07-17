@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Logo } from "@/components/site/logo";
 import { VoiceDemo } from "@/components/demo/voice-demo";
+import { CookiePreferencesLink } from "@/components/consent/consent-provider";
 import { RECEPTIONIST } from "@/lib/demo/config";
 
 export const metadata: Metadata = {
@@ -48,6 +49,19 @@ export default function DemoPage() {
 
         <VoiceDemo />
       </main>
+
+      <footer className="relative z-10 mx-auto flex max-w-[880px] flex-wrap items-center justify-center gap-x-6 gap-y-2 px-6 pb-10 text-[13px] font-semibold text-mute md:px-10">
+        <Link href="/privacy" className="hover:text-ink">
+          Privacy Policy
+        </Link>
+        <Link href="/terms" className="hover:text-ink">
+          Terms of Service
+        </Link>
+        <Link href="/cookies" className="hover:text-ink">
+          Cookie Policy
+        </Link>
+        <CookiePreferencesLink className="font-semibold text-mute" />
+      </footer>
     </div>
   );
 }

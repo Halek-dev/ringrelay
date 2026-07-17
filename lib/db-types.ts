@@ -73,6 +73,68 @@ export type ContactResult = {
   ranAt: string;
 };
 
+// Careers
+export type JobStatus = "draft" | "open" | "closed";
+export type EmploymentType = "hourly" | "part_time" | "full_time" | "contract";
+export type ApplicationStatus =
+  | "new"
+  | "reviewing"
+  | "interview"
+  | "rejected"
+  | "hired";
+
+export type JobPosting = {
+  id: string;
+  slug: string;
+  title: string;
+  employment_type: EmploymentType;
+  location: string;
+  pay_range: string | null;
+  hours_per_week: string | null;
+  timezone_requirement: string | null;
+  summary: string;
+  description: string;
+  responsibilities: string[];
+  requirements: string[];
+  nice_to_haves: string[];
+  status: JobStatus;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type JobApplication = {
+  id: string;
+  posting_id: string;
+  full_name: string;
+  email: string;
+  phone: string;
+  country_timezone: string;
+  years_experience: string | null;
+  hours_per_week: string | null;
+  earliest_start: string | null;
+  cover_note: string | null;
+  cv_path: string | null;
+  consent_given: boolean;
+  consent_at: string | null;
+  status: ApplicationStatus;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type TeamMember = {
+  id: string;
+  name: string;
+  role_title: string;
+  photo_url: string | null;
+  bio: string | null;
+  sort_order: number;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
 export type ClientPlan = "starter" | "pro" | "multi";
 export type SetupStatus = "onboarding" | "live";
 export type OnboardingStepKey =
@@ -245,6 +307,35 @@ export const INDUSTRY_ORDER: LeadIndustry[] = [
   "roofing",
   "electrical",
   "other",
+];
+
+export const JOB_STATUS_LABEL: Record<JobStatus, string> = {
+  draft: "Draft",
+  open: "Open",
+  closed: "Closed",
+};
+
+export const EMPLOYMENT_TYPE_LABEL: Record<EmploymentType, string> = {
+  hourly: "Hourly",
+  part_time: "Part time",
+  full_time: "Full time",
+  contract: "Contract",
+};
+
+export const APPLICATION_STATUS_LABEL: Record<ApplicationStatus, string> = {
+  new: "New",
+  reviewing: "Reviewing",
+  interview: "Interview",
+  rejected: "Rejected",
+  hired: "Hired",
+};
+
+export const APPLICATION_STATUS_ORDER: ApplicationStatus[] = [
+  "new",
+  "reviewing",
+  "interview",
+  "rejected",
+  "hired",
 ];
 
 export const PLAN_LABEL: Record<ClientPlan, string> = {
