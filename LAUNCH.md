@@ -8,11 +8,11 @@ BLOCKER are legally or functionally required; do not launch without them.
 GDPR requires a genuine, identifiable data controller. Replace every
 placeholder with real details:
 
-- [ ] `app/(marketing)/privacy/page.tsx`: replace `[LEGAL ENTITY NAME]`,
-      `[CONTACT EMAIL]`, `[REGISTERED ADDRESS]`
-- [ ] `app/(marketing)/terms/page.tsx`: replace `[LEGAL ENTITY NAME]`,
-      `[GOVERNING LAW / JURISDICTION]`
-- [ ] Confirm the contact email actually receives mail
+- [x] `app/(marketing)/privacy/page.tsx`: controller filled in (Ringrelay,
+      tryringrelay@gmail.com, Little Rock, Arkansas, USA)
+- [x] `app/(marketing)/terms/page.tsx`: entity filled in; governing law set to
+      the State of Arkansas, United States
+- [ ] Confirm tryringrelay@gmail.com actually receives mail
 
 ## 2. Database (BLOCKER)
 

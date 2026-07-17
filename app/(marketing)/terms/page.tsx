@@ -8,15 +8,15 @@ export const metadata: Metadata = {
     "The terms that govern Ring Relay's AI receptionist service: setup, monthly retainer, the 90 day minimum, and what we do and do not promise.",
 };
 
-// Placeholders [LEGAL ENTITY NAME] and [GOVERNING LAW / JURISDICTION] must be
-// filled with real details before launch.
+// Entity and governing-law details are filled in; keep them current if the
+// entity or jurisdiction ever changes.
 
 export default function TermsPage() {
   return (
     <LegalPage eyebrow="Legal" title="Terms of Service" updated="July 2026">
       <LegalSection title="1. Who these terms are for">
         <p>
-          These terms govern the services provided by [LEGAL ENTITY NAME]
+          These terms govern the services provided by Ringrelay
           (&quot;Ring Relay&quot;, &quot;we&quot;) to business customers
           (&quot;you&quot;). Our service is sold to businesses, not consumers.
           By signing up, you confirm you are acting for a business.
@@ -114,9 +114,10 @@ export default function TermsPage() {
 
       <LegalSection title="10. General">
         <p>
-          These terms are governed by the laws of [GOVERNING LAW /
-          JURISDICTION], and its courts have exclusive jurisdiction. If any
-          clause is found unenforceable, the rest stand. We may update these
+          These terms are governed by the laws of the State of Arkansas,
+          United States, and the state and federal courts located in Arkansas
+          have exclusive jurisdiction. If any clause is found unenforceable,
+          the rest stand. We may update these
           terms with reasonable notice; continued use after the notice period
           is acceptance.
         </p>

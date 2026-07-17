@@ -9,20 +9,21 @@ export const metadata: Metadata = {
 };
 
 // GDPR requires a genuine, identifiable data controller and a real contact
-// route. The three placeholders below ([LEGAL ENTITY NAME], [CONTACT EMAIL],
-// [REGISTERED ADDRESS]) MUST be replaced with real details before launch.
-// This page is the one place the controller's location legally belongs.
+// route. The controller details below are filled in; keep them current if the
+// entity, email, or address ever changes. This page is the one place the
+// controller's location legally belongs.
 
 export default function PrivacyPage() {
   return (
     <LegalPage eyebrow="Legal" title="Privacy Policy" updated="July 2026">
       <LegalSection title="1. Who we are">
         <p>
-          This website, ringrelay.com, is operated by [LEGAL ENTITY NAME]
+          This website, ringrelay.com, is operated by Ringrelay
           (&quot;Ring Relay&quot;, &quot;we&quot;, &quot;us&quot;), the data
           controller for the personal data described in this policy. Registered
-          address: [REGISTERED ADDRESS]. For anything related to your personal
-          data, contact us at [CONTACT EMAIL]. We aim to answer within 30 days.
+          address: Little Rock, Arkansas, USA. For anything related to your
+          personal data, contact us at tryringrelay@gmail.com. We aim to answer
+          within 30 days.
         </p>
       </LegalSection>
 
@@ -129,8 +130,8 @@ export default function PrivacyPage() {
           ]}
         />
         <p>
-          To exercise any of these, email [CONTACT EMAIL]. You also have the
-          right to lodge a complaint with a data protection supervisory
+          To exercise any of these, email tryringrelay@gmail.com. You also have
+          the right to lodge a complaint with a data protection supervisory
           authority, either where you live or where you believe an infringement
           occurred.
         </p>
