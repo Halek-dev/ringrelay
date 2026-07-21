@@ -18,7 +18,7 @@ export function SiteHeader() {
         <Logo href="/" />
 
         {/* Desktop nav */}
-        <nav className="hidden items-center gap-1 md:flex">
+        <nav className="hidden items-center gap-1 lg:flex">
           {NAV_LINKS.map((link) => {
             const active = pathname === link.href;
             return (
@@ -63,7 +63,7 @@ export function SiteHeader() {
           type="button"
           aria-label="Toggle menu"
           onClick={() => setOpen((v) => !v)}
-          className="grid h-10 w-10 place-items-center rounded-full border border-line2 text-ink md:hidden"
+          className="grid h-10 w-10 place-items-center rounded-full border border-line2 text-ink lg:hidden"
         >
           {open ? <X size={18} /> : <Menu size={18} />}
         </button>
@@ -71,7 +71,7 @@ export function SiteHeader() {
 
       {/* Mobile menu */}
       {open && (
-        <nav className="flex flex-col gap-1 border-t border-line bg-nav px-6 pb-5 pt-2 md:hidden">
+        <nav className="flex flex-col gap-1 border-t border-line bg-nav px-6 pb-5 pt-2 lg:hidden">
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}

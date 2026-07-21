@@ -316,7 +316,7 @@ export default function HomePage() {
                 <Link
                   href="/pricing"
                   className={
-                    "mt-7 inline-flex items-center justify-center gap-2 rounded-full px-6 py-[13px] text-[15.5px] font-bold transition-all duration-200 hover:-translate-y-0.5 " +
+                    "mt-7 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full px-4 py-[13px] text-[14px] font-bold transition-all duration-200 hover:-translate-y-0.5 lg:px-6 lg:text-[15.5px] " +
                     (popular
                       ? "bg-acc text-white"
                       : "border-[1.5px] border-line2 text-ink")
