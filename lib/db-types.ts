@@ -123,6 +123,24 @@ export type JobApplication = {
   updated_at: string;
 };
 
+// Transactional email templates (edited in /admin/emails, sent via Resend)
+export type EmailTemplateKey =
+  | "application_received"
+  | "interview_invite"
+  | "application_rejected";
+
+export type EmailTemplate = {
+  id: string;
+  key: EmailTemplateKey;
+  name: string;
+  description: string | null;
+  subject: string;
+  body: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
 export type TeamMember = {
   id: string;
   name: string;

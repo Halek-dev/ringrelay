@@ -24,6 +24,7 @@ import {
   UserCog,
   BookOpen,
   Briefcase,
+  MailPlus,
   type LucideIcon,
 } from "lucide-react";
 
@@ -53,6 +54,7 @@ const MAP: Record<string, LucideIcon> = {
   UserCog,
   BookOpen,
   Briefcase,
+  MailPlus,
 };
 
 /** Render a lucide icon by the string name stored in mock-data. */

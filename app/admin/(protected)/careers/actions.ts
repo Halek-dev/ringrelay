@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { assertOwner } from "@/lib/auth";
 import { ok, fail, type ActionResult } from "@/lib/action-result";
+import { sendTemplate, applicantVars } from "@/lib/email/send";
 import type {
   ApplicationStatus,
   EmploymentType,
@@ -168,6 +169,66 @@ export async function saveApplicationNotes(
     .update({ notes: notes.trim() || null })
     .eq("id", id);
   if (error) return fail(error.message);
+  revalidatePath("/admin/careers/applications");
+  return ok();
+}
+
+/**
+ * Send a status email (interview invite or rejection) to an applicant, using
+ * the editable template from /admin/emails. On success the application's
+ * status flips to match and the send is recorded in the private notes, so the
+ * inbox always shows what was already sent.
+ */
+export async function sendApplicantEmail(
+  applicationId: string,
+  kind: "interview" | "rejected",
+): Promise<ActionResult> {
+  await assertOwner();
+  const supabase = createClient();
+
+  const { data: app, error } = await supabase
+    .from("job_applications")
+    .select("id, full_name, email, notes, job_postings(title)")
+    .eq("id", applicationId)
+    .single();
+  if (error || !app) return fail("Application not found.");
+
+  const rel = (
+    app as unknown as {
+      job_postings: { title: string } | { title: string }[] | null;
+    }
+  ).job_postings;
+  const role = Array.isArray(rel)
+    ? rel[0]?.title ?? "the role"
+    : rel?.title ?? "the role";
+  const templateKey =
+    kind === "interview" ? "interview_invite" : "application_rejected";
+
+  const sent = await sendTemplate(
+    templateKey,
+    app.email as string,
+    applicantVars(app.full_name as string, role),
+  );
+  if (!sent.ok) return fail(sent.error);
+
+  const stamp = new Date().toISOString().slice(0, 10);
+  const noteLine =
+    kind === "interview"
+      ? `[Email] Interview invite sent ${stamp}`
+      : `[Email] Rejection sent ${stamp}`;
+  const notes = [(app.notes as string | null) ?? "", noteLine]
+    .filter(Boolean)
+    .join("\n");
+
+  const { error: upErr } = await supabase
+    .from("job_applications")
+    .update({
+      status: kind === "interview" ? "interview" : "rejected",
+      notes,
+    })
+    .eq("id", applicationId);
+  if (upErr) return fail(upErr.message);
+
   revalidatePath("/admin/careers/applications");
   return ok();
 }

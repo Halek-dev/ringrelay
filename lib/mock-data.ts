@@ -398,6 +398,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { label: "Playbook", href: "/admin/playbook", icon: "BookOpen" },
   { label: "Testimonials", href: "/admin/testimonials", icon: "Star" },
   { label: "Careers", href: "/admin/careers", icon: "Briefcase", ownerOnly: true },
+  { label: "Emails", href: "/admin/emails", icon: "MailPlus", ownerOnly: true },
   { label: "Team CMS", href: "/admin/team-members", icon: "UserPlus", ownerOnly: true },
   { label: "Team", href: "/admin/team", icon: "UserCog", ownerOnly: true },
 ];

@@ -4,12 +4,13 @@ import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as Dialog from "@radix-ui/react-dialog";
-import { ArrowLeft, X, Download, Loader2, Save } from "lucide-react";
+import { ArrowLeft, X, Download, Loader2, Save, Send, Mail } from "lucide-react";
 import { useToast } from "@/components/ui/toaster";
 import {
   setApplicationStatus,
   saveApplicationNotes,
   getCvDownloadUrl,
+  sendApplicantEmail,
 } from "@/app/admin/(protected)/careers/actions";
 import {
   APPLICATION_STATUS_LABEL,
@@ -212,6 +213,21 @@ function ApplicationDetail({ app }: { app: AppRow }) {
     });
   }
 
+  function emailApplicant(kind: "interview" | "rejected") {
+    const label = kind === "interview" ? "interview invite" : "rejection";
+    if (!confirm(`Send the ${label} email to ${app.full_name} (${app.email})?`))
+      return;
+    startTransition(async () => {
+      const res = await sendApplicantEmail(app.id, kind);
+      if (!res.ok)
+        toast({ variant: "info", title: "Email not sent", description: res.error });
+      else {
+        toast({ title: "Email sent", description: `Status moved to ${label === "rejection" ? "Rejected" : "Interview"}.` });
+        router.refresh();
+      }
+    });
+  }
+
   async function downloadCv() {
     if (!app.cv_path) return;
     setCvLoading(true);
@@ -304,6 +320,35 @@ function ApplicationDetail({ app }: { app: AppRow }) {
         ) : (
           <p className="text-[13px] text-mute">No CV attached.</p>
         )}
+
+        {/* Status emails, using the templates from /admin/emails */}
+        <div>
+          <div className="mb-2 font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-mute">
+            Email the applicant
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => emailApplicant("interview")}
+              className="inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-acc px-4 py-[8px] text-[13px] font-bold text-white hover:bg-acc-b disabled:opacity-60"
+            >
+              <Send size={13} /> Send interview invite
+            </button>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => emailApplicant("rejected")}
+              className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border-[1.5px] border-line2 px-4 py-[8px] text-[13px] font-bold text-ink transition-colors hover:border-ink disabled:opacity-60"
+            >
+              <Mail size={13} /> Send rejection
+            </button>
+          </div>
+          <p className="mt-2 text-[12px] text-mute">
+            Uses your templates from the Emails page and moves the status to
+            match. Sends are noted below.
+          </p>
+        </div>
 
         {/* Cover note */}
         {app.cover_note && (

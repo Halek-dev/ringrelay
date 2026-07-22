@@ -28,6 +28,7 @@ project (skip any already applied):
 - [ ] `0007_contact_finder.sql`
 - [ ] `0008_careers_team.sql` (also creates the `cvs` and `team-photos`
       storage buckets and seeds the two job postings)
+- [ ] `0009_email_templates.sql` (seeds the three editable email templates)
 - [ ] Run `supabase/seed.sql` (outreach templates)
 - [ ] Verify in Storage: `cvs` bucket is PRIVATE, `team-photos` is public
 - [ ] Create the owner account and confirm `profiles.role = 'owner'`
@@ -43,6 +44,23 @@ Set in Vercel project settings (values from `.env.local.example`):
 - [ ] `ELEVENLABS_API_KEY`
 - [ ] `ELEVENLABS_VOICE_ID`
 - [ ] `NEXT_PUBLIC_SITE_URL` set to the real domain
+- [ ] `RESEND_API_KEY`, `EMAIL_FROM`, `EMAIL_REPLY_TO` (see section 3a)
+
+## 3a. Email (Resend on tryringrelay.com)
+
+Without this, sends are skipped silently and logged. The app still works.
+
+- [ ] Create a resend.com account and add the domain `tryringrelay.com`
+- [ ] Add the DNS records Resend shows you (SPF TXT + DKIM CNAMEs) at your
+      domain registrar, wait for Verified status
+- [ ] Set `EMAIL_FROM="Ring Relay <hello@tryringrelay.com>"` (any local part
+      works once the domain is verified; no mailbox needs to exist)
+- [ ] Set `EMAIL_REPLY_TO=tryringrelay@gmail.com` so applicant replies reach a
+      real inbox you read
+- [ ] In /admin/emails, read the three templates, adjust the wording, and use
+      "Send me a test" on each to check they land in the inbox, not spam
+- [ ] Submit a real test application on /careers and confirm the auto reply
+      arrives
 
 ## 4. Content
 
@@ -79,9 +97,10 @@ Set in Vercel project settings (values from `.env.local.example`):
 
 ## 7. Known gaps, deliberately not built yet
 
-- No email notifications: contact submissions, demo bookings, and job
-  applications land in the admin only. Check the admin daily, or build
-  notifications before relying on it.
+- Applicant emails exist (auto reply, interview invite, rejection), but there
+  are still NO owner notifications and NO contact form auto reply: contact
+  submissions and demo bookings land in the admin only. Check the admin
+  daily, or build notifications before relying on it.
 - No rate limiting on /api/demo/chat and /api/demo/speak beyond what the
   vendors enforce: these burn Anthropic and ElevenLabs credits per call.
   Watch usage after launch; add per IP limits before promoting the demo

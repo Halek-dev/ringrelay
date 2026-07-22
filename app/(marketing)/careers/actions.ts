@@ -2,6 +2,7 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ok, fail, type ActionResult } from "@/lib/action-result";
+import { sendTemplate, applicantVars } from "@/lib/email/send";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_CV_BYTES = 5 * 1024 * 1024; // 5MB
@@ -55,7 +56,7 @@ export async function submitApplication(
   // The posting must exist and actually be open.
   const { data: posting } = await admin
     .from("job_postings")
-    .select("id, status, slug")
+    .select("id, status, slug, title")
     .eq("id", postingId)
     .maybeSingle();
   if (!posting || posting.status !== "open")
@@ -121,9 +122,15 @@ export async function submitApplication(
     return fail("Something went wrong saving your application. Please try again.");
   }
 
-  // Notification: no outbound email is configured, so the application is
-  // persisted and surfaced in the admin inbox, and logged server side.
   console.log(`[careers] New application for ${posting.slug} from ${email}`);
+
+  // Auto-reply to the applicant. Best effort: the application is already
+  // saved, so an email problem must never surface as a form error.
+  await sendTemplate(
+    "application_received",
+    email,
+    applicantVars(fullName, posting.title as string),
+  );
 
   return ok();
 }
