@@ -1,13 +1,69 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { CheckCircle2, Loader2, Send, Upload } from "lucide-react";
+import { ArrowRight, CheckCircle2, Loader2, Send, Upload } from "lucide-react";
 import { submitApplication } from "@/app/(marketing)/careers/actions";
 import { cn } from "@/lib/utils";
 
 const inputCls =
   "w-full rounded-[10px] border-[1.5px] border-line2 bg-card px-[13px] py-[11px] text-[14.5px] text-ink placeholder:text-mute";
+
+/**
+ * The apply area below a job description. Shows a single Apply button first;
+ * the form only appears (and scrolls into view) once the reader chooses to
+ * apply, so the posting reads as a page, not a form.
+ */
+export function ApplySection({
+  postingId,
+  postingTitle,
+}: {
+  postingId: string;
+  postingTitle: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const formRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (open) {
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [open]);
+
+  if (!open) {
+    return (
+      <div className="mt-12 rounded-[18px] border border-line2 bg-card p-7 text-center shadow-soft">
+        <h2 className="font-display text-[22px] font-extrabold tracking-[-0.02em] text-ink">
+          Sound like you?
+        </h2>
+        <p className="mx-auto mt-2 max-w-[420px] text-[14.5px] leading-[1.6] text-body">
+          The application takes about five minutes. Short and honest beats long
+          and polished.
+        </p>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="mt-5 inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-acc px-7 py-[13px] text-[15.5px] font-bold text-white transition-all hover:-translate-y-0.5 hover:bg-acc-b"
+        >
+          Apply for this role <ArrowRight size={16} strokeWidth={2.5} />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div ref={formRef} className="mt-12 scroll-mt-24">
+      <h2 className="mb-1 font-display text-[24px] font-extrabold tracking-[-0.02em] text-ink">
+        Apply for this role
+      </h2>
+      <p className="mb-6 text-[14.5px] text-body">
+        Short and honest beats long and polished. Tell us why this role fits
+        you.
+      </p>
+      <ApplyForm postingId={postingId} postingTitle={postingTitle} />
+    </div>
+  );
+}
 
 export function ApplyForm({
   postingId,

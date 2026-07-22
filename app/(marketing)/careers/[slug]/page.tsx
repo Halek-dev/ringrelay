@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Check, MapPin, Clock, Globe2, Wallet } from "lucide-react";
 import { getOpenPostingBySlug } from "@/lib/data/careers";
 import { EMPLOYMENT_TYPE_LABEL } from "@/lib/db-types";
-import { ApplyForm } from "@/components/site/apply-form";
+import { ApplySection } from "@/components/site/apply-form";
 
 export const dynamic = "force-dynamic";
 
@@ -31,12 +31,15 @@ export default async function JobPage({
   const facts = [
     { icon: Clock, label: EMPLOYMENT_TYPE_LABEL[posting.employment_type] },
     { icon: MapPin, label: posting.location },
-    ...(posting.pay_range ? [{ icon: Wallet, label: posting.pay_range }] : []),
     ...(posting.hours_per_week ? [{ icon: Clock, label: posting.hours_per_week }] : []),
     ...(posting.timezone_requirement
       ? [{ icon: Globe2, label: posting.timezone_requirement }]
       : []),
   ];
+
+  // "Hourly pay" vs "Annual salary" framing follows the employment type.
+  const payLabel =
+    posting.employment_type === "hourly" ? "Hourly pay" : "Pay";
 
   return (
     <div className="relative mx-auto max-w-[760px] px-6 pb-[88px] pt-14 md:px-10">
@@ -62,6 +65,23 @@ export default async function JobPage({
         ))}
       </div>
 
+      {/* Pay, prominent on the description. Renders only when a range is set. */}
+      {posting.pay_range && (
+        <div className="mt-6 flex items-center gap-4 rounded-[16px] border border-acc/30 bg-acc/[0.06] px-5 py-4">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[12px] bg-acc text-white">
+            <Wallet size={20} strokeWidth={2.2} />
+          </span>
+          <div>
+            <div className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-acc-dim">
+              {payLabel}
+            </div>
+            <div className="font-display text-[20px] font-extrabold tracking-[-0.01em] text-ink">
+              {posting.pay_range}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mt-8 whitespace-pre-line text-[16px] leading-[1.7] text-body">
         {posting.description}
       </div>
@@ -76,16 +96,7 @@ export default async function JobPage({
         <JobList title="Nice to have" items={posting.nice_to_haves} />
       )}
 
-      <div id="apply" className="mt-12">
-        <h2 className="mb-1 font-display text-[24px] font-extrabold tracking-[-0.02em] text-ink">
-          Apply for this role
-        </h2>
-        <p className="mb-6 text-[14.5px] text-body">
-          Short and honest beats long and polished. Tell us why this role fits
-          you.
-        </p>
-        <ApplyForm postingId={posting.id} postingTitle={posting.title} />
-      </div>
+      <ApplySection postingId={posting.id} postingTitle={posting.title} />
     </div>
   );
 }
