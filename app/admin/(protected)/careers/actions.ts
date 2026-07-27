@@ -5,7 +5,13 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { assertOwner } from "@/lib/auth";
 import { ok, fail, type ActionResult } from "@/lib/action-result";
-import { sendTemplate, applicantVars } from "@/lib/email/send";
+import {
+  sendTemplate,
+  sendEmailBatch,
+  getActiveTemplate,
+  applicantVars,
+} from "@/lib/email/send";
+import { substituteVars } from "@/lib/email/layout";
 import type {
   ApplicationStatus,
   EmploymentType,
@@ -231,6 +237,79 @@ export async function sendApplicantEmail(
 
   revalidatePath("/admin/careers/applications");
   return ok();
+}
+
+type AppRel = { title: string } | { title: string }[] | null;
+function roleFrom(rel: AppRel): string {
+  if (Array.isArray(rel)) return rel[0]?.title ?? "the role";
+  return rel?.title ?? "the role";
+}
+
+/**
+ * Send the same status email (interview invite or rejection) to MANY applicants
+ * at once via the Resend batch endpoint. Only the applicants whose email
+ * actually sent are advanced to the new status and stamped in their notes, so
+ * a partial failure is safe to retry. Returns how many sent and failed.
+ */
+export async function sendBulkApplicantEmail(
+  ids: string[],
+  kind: "interview" | "rejected",
+): Promise<ActionResult<{ sent: number; failed: number }>> {
+  await assertOwner();
+  if (ids.length === 0) return fail("No applications selected.");
+
+  const supabase = createClient();
+  const { data: apps, error } = await supabase
+    .from("job_applications")
+    .select("id, full_name, email, notes, job_postings(title)")
+    .in("id", ids);
+  if (error) return fail(error.message);
+  if (!apps || apps.length === 0) return fail("No applications found.");
+
+  const templateKey =
+    kind === "interview" ? "interview_invite" : "application_rejected";
+  const template = await getActiveTemplate(templateKey);
+  if (!template)
+    return fail("That email template is switched off. Turn it on under Emails.");
+
+  const notesById = new Map<string, string | null>();
+  const items = apps.map((a) => {
+    notesById.set(a.id as string, (a.notes as string | null) ?? null);
+    const role = roleFrom((a as { job_postings: AppRel }).job_postings);
+    const vars = applicantVars(a.full_name as string, role);
+    return {
+      ref: a.id as string,
+      to: a.email as string,
+      subject: substituteVars(template.subject, vars),
+      bodyText: substituteVars(template.body, vars),
+    };
+  });
+
+  const { successRefs, failedRefs } = await sendEmailBatch(items);
+
+  // Advance only the applicants who actually received the email.
+  if (successRefs.length > 0) {
+    const status = kind === "interview" ? "interview" : "rejected";
+    const stamp = new Date().toISOString().slice(0, 10);
+    const noteLine =
+      kind === "interview"
+        ? `[Email] Interview invite sent ${stamp}`
+        : `[Email] Rejection sent ${stamp}`;
+
+    await Promise.all(
+      successRefs.map((id) => {
+        const prev = notesById.get(id) ?? "";
+        const notes = [prev, noteLine].filter(Boolean).join("\n");
+        return supabase
+          .from("job_applications")
+          .update({ status, notes })
+          .eq("id", id);
+      }),
+    );
+  }
+
+  revalidatePath("/admin/careers/applications");
+  return ok({ sent: successRefs.length, failed: failedRefs.length });
 }
 
 /**

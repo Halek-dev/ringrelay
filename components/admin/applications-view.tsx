@@ -11,6 +11,7 @@ import {
   saveApplicationNotes,
   getCvDownloadUrl,
   sendApplicantEmail,
+  sendBulkApplicantEmail,
 } from "@/app/admin/(protected)/careers/actions";
 import {
   APPLICATION_STATUS_LABEL,
@@ -38,9 +39,13 @@ export function ApplicationsView({
   applications: AppRow[];
   postings: JobPosting[];
 }) {
+  const router = useRouter();
+  const { toast } = useToast();
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<ApplicationStatus | "all">("all");
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkPending, startBulk] = useTransition();
 
   const filtered = useMemo(
     () =>
@@ -55,6 +60,56 @@ export function ApplicationsView({
   const active = activeId
     ? applications.find((a) => a.id === activeId) ?? null
     : null;
+
+  const filteredIds = filtered.map((a) => a.id);
+  const allSelected =
+    filteredIds.length > 0 && filteredIds.every((id) => selected.has(id));
+
+  function toggleAll() {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allSelected) filteredIds.forEach((id) => next.delete(id));
+      else filteredIds.forEach((id) => next.add(id));
+      return next;
+    });
+  }
+
+  function toggleOne(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function bulkEmail(kind: "interview" | "rejected") {
+    const ids = [...selected];
+    const label = kind === "interview" ? "interview invite" : "rejection";
+    if (
+      !confirm(
+        `Send the ${label} email to ${ids.length} applicant${ids.length === 1 ? "" : "s"}? This also moves them to ${kind === "interview" ? "Interview" : "Rejected"}.`,
+      )
+    )
+      return;
+    startBulk(async () => {
+      const res = await sendBulkApplicantEmail(ids, kind);
+      if (!res.ok) {
+        toast({ variant: "info", title: "Failed", description: res.error });
+        return;
+      }
+      toast({
+        title: `Sent to ${res.data.sent}`,
+        description:
+          res.data.failed > 0
+            ? `${res.data.failed} did not send, still selected to retry.`
+            : `All ${label} emails sent.`,
+      });
+      // Keep any that failed selected; drop the ones that went out.
+      setSelected(new Set());
+      router.refresh();
+    });
+  }
 
   const selectCls =
     "rounded-[9px] border-[1.5px] border-line2 bg-card2 px-2 py-[8px] text-[13px] font-semibold text-ink";
@@ -73,7 +128,8 @@ export function ApplicationsView({
           Applications
         </h1>
         <p className="mt-1 text-[14.5px] text-body">
-          {applications.length} received. Click one to review it.
+          {applications.length} received. Click a row to review it, or tick
+          several and email them all at once.
         </p>
       </header>
 
@@ -106,10 +162,58 @@ export function ApplicationsView({
         </select>
       </div>
 
+      {/* Bulk action bar: select applicants, then email them all at once. */}
+      {selected.size > 0 && (
+        <div className="sticky top-3 z-10 mb-4 flex flex-wrap items-center gap-3 rounded-[12px] border border-acc/30 bg-acc/[0.08] px-4 py-3 shadow-soft backdrop-blur">
+          <span className="text-[13.5px] font-bold text-ink">
+            {selected.size} selected
+          </span>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={bulkPending}
+              onClick={() => bulkEmail("interview")}
+              className="inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-acc px-4 py-[8px] text-[13px] font-bold text-white hover:bg-acc-b disabled:opacity-60"
+            >
+              {bulkPending ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : (
+                <Send size={13} />
+              )}
+              Send interview invite
+            </button>
+            <button
+              type="button"
+              disabled={bulkPending}
+              onClick={() => bulkEmail("rejected")}
+              className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border-[1.5px] border-line2 bg-card px-4 py-[8px] text-[13px] font-bold text-ink transition-colors hover:border-ink disabled:opacity-60"
+            >
+              <Mail size={13} /> Send rejection
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSelected(new Set())}
+            className="ml-auto text-[13px] font-semibold text-mute hover:text-ink"
+          >
+            Clear
+          </button>
+        </div>
+      )}
+
       <div className="overflow-x-auto rounded-[16px] border border-line2 bg-card shadow-soft">
-        <table className="w-full min-w-[720px] border-collapse text-left">
+        <table className="w-full min-w-[760px] border-collapse text-left">
           <thead>
             <tr className="border-b border-line2 bg-panel">
+              <th className="w-[44px] px-5 py-[12px]">
+                <input
+                  type="checkbox"
+                  aria-label="Select all"
+                  checked={allSelected}
+                  onChange={toggleAll}
+                  className="h-4 w-4 rounded border-line2 text-acc focus:ring-acc"
+                />
+              </th>
               {["Name", "Role", "Country / timezone", "Experience", "Applied", "Status"].map(
                 (h) => (
                   <th
@@ -126,7 +230,11 @@ export function ApplicationsView({
             {filtered.map((a) => (
               <tr
                 key={a.id}
-                onClick={() => setActiveId(a.id)}
+                onClick={(e) => {
+                  // Clicks inside the checkbox cell select, they do not open.
+                  if ((e.target as HTMLElement).closest("[data-select-cell]")) return;
+                  setActiveId(a.id);
+                }}
                 tabIndex={0}
                 role="button"
                 onKeyDown={(e) => {
@@ -135,8 +243,20 @@ export function ApplicationsView({
                     setActiveId(a.id);
                   }
                 }}
-                className="cursor-pointer border-b border-line last:border-b-0 hover:bg-panel/60 focus-visible:bg-panel/60"
+                className={cn(
+                  "cursor-pointer border-b border-line last:border-b-0 hover:bg-panel/60 focus-visible:bg-panel/60",
+                  selected.has(a.id) && "bg-acc/[0.05]",
+                )}
               >
+                <td data-select-cell className="px-5 py-[13px]">
+                  <input
+                    type="checkbox"
+                    aria-label={`Select ${a.full_name}`}
+                    checked={selected.has(a.id)}
+                    onChange={() => toggleOne(a.id)}
+                    className="h-4 w-4 rounded border-line2 text-acc focus:ring-acc"
+                  />
+                </td>
                 <td className="px-5 py-[13px] text-[14px] font-bold text-ink">
                   {a.full_name}
                 </td>
@@ -166,7 +286,7 @@ export function ApplicationsView({
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-5 py-10 text-center text-[14px] text-mute">
+                <td colSpan={7} className="px-5 py-10 text-center text-[14px] text-mute">
                   No applications match these filters.
                 </td>
               </tr>

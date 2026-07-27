@@ -65,6 +65,76 @@ export async function sendEmail(input: {
   }
 }
 
+const RESEND_BATCH_URL = "https://api.resend.com/emails/batch";
+const BATCH_MAX = 100; // Resend caps one batch call at 100 messages.
+
+export type BatchItem = {
+  ref: string; // opaque id the caller uses to correlate results (e.g. application id)
+  to: string;
+  subject: string;
+  bodyText: string;
+};
+
+/**
+ * Send many templated emails in as few HTTP calls as possible via Resend's
+ * batch endpoint. Returns which refs went out and which did not, so the caller
+ * only advances the ones that actually sent. Never throws.
+ */
+export async function sendEmailBatch(
+  items: BatchItem[],
+): Promise<{ successRefs: string[]; failedRefs: string[]; error?: string }> {
+  if (items.length === 0) return { successRefs: [], failedRefs: [] };
+
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.EMAIL_FROM;
+  if (!apiKey || !from) {
+    console.log(`[email] Not configured; would batch-send ${items.length} emails.`);
+    return {
+      successRefs: [],
+      failedRefs: items.map((i) => i.ref),
+      error: "Email is not configured on the server yet.",
+    };
+  }
+  const replyTo = process.env.EMAIL_REPLY_TO;
+
+  const successRefs: string[] = [];
+  const failedRefs: string[] = [];
+
+  for (let i = 0; i < items.length; i += BATCH_MAX) {
+    const chunk = items.slice(i, i + BATCH_MAX);
+    const payload = chunk.map((m) => ({
+      from,
+      to: [m.to],
+      subject: m.subject,
+      html: renderEmailHtml(m.bodyText),
+      text: m.bodyText,
+      ...(replyTo ? { reply_to: replyTo } : {}),
+    }));
+    try {
+      const res = await fetch(RESEND_BATCH_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        for (const m of chunk) successRefs.push(m.ref);
+      } else {
+        const detail = await res.text().catch(() => "");
+        console.error("[email] batch error:", res.status, detail.slice(0, 300));
+        for (const m of chunk) failedRefs.push(m.ref);
+      }
+    } catch (err) {
+      console.error("[email] batch send failed:", err);
+      for (const m of chunk) failedRefs.push(m.ref);
+    }
+  }
+
+  return { successRefs, failedRefs };
+}
+
 /** Load an active template by key. Null when missing or switched off. */
 export async function getActiveTemplate(
   key: EmailTemplateKey,
