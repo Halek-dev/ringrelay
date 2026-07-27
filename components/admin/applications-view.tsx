@@ -12,6 +12,7 @@ import {
   getCvDownloadUrl,
   sendApplicantEmail,
   sendBulkApplicantEmail,
+  setBulkApplicationStatus,
 } from "@/app/admin/(protected)/careers/actions";
 import {
   APPLICATION_STATUS_LABEL,
@@ -111,6 +112,28 @@ export function ApplicationsView({
     });
   }
 
+  function bulkStatus(status: ApplicationStatus) {
+    const ids = [...selected];
+    if (
+      !confirm(
+        `Move ${ids.length} applicant${ids.length === 1 ? "" : "s"} to ${APPLICATION_STATUS_LABEL[status]}? No email is sent.`,
+      )
+    )
+      return;
+    startBulk(async () => {
+      const res = await setBulkApplicationStatus(ids, status);
+      if (!res.ok) {
+        toast({ variant: "info", title: "Failed", description: res.error });
+        return;
+      }
+      toast({
+        title: `Moved ${res.data.updated} to ${APPLICATION_STATUS_LABEL[status]}`,
+      });
+      setSelected(new Set());
+      router.refresh();
+    });
+  }
+
   const selectCls =
     "rounded-[9px] border-[1.5px] border-line2 bg-card2 px-2 py-[8px] text-[13px] font-semibold text-ink";
 
@@ -190,6 +213,29 @@ export function ApplicationsView({
             >
               <Mail size={13} /> Send rejection
             </button>
+          </div>
+          <div className="flex items-center gap-2 border-l border-acc/20 pl-3">
+            <span className="whitespace-nowrap text-[12px] font-semibold text-mute">
+              or just set status
+            </span>
+            <select
+              value=""
+              disabled={bulkPending}
+              onChange={(e) => {
+                const v = e.target.value as ApplicationStatus | "";
+                if (v) bulkStatus(v);
+                e.target.value = "";
+              }}
+              className="rounded-[9px] border-[1.5px] border-line2 bg-card px-2 py-[7px] text-[12.5px] font-semibold text-ink disabled:opacity-60"
+              aria-label="Set status without email"
+            >
+              <option value="">Set status to...</option>
+              {APPLICATION_STATUS_ORDER.map((s) => (
+                <option key={s} value={s}>
+                  {APPLICATION_STATUS_LABEL[s]}
+                </option>
+              ))}
+            </select>
           </div>
           <button
             type="button"

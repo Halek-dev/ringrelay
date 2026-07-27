@@ -239,6 +239,30 @@ export async function sendApplicantEmail(
   return ok();
 }
 
+/**
+ * Set the status of many applications at once WITHOUT sending any email. Use
+ * this to fix or move a batch in the pipeline (for example, marking people you
+ * already invited as Interview). The email-sending bulk action changes status
+ * too, but only for applicants whose email actually sent.
+ */
+export async function setBulkApplicationStatus(
+  ids: string[],
+  status: ApplicationStatus,
+): Promise<ActionResult<{ updated: number }>> {
+  await assertOwner();
+  if (ids.length === 0) return fail("No applications selected.");
+
+  const supabase = createClient();
+  const { error, count } = await supabase
+    .from("job_applications")
+    .update({ status }, { count: "exact" })
+    .in("id", ids);
+  if (error) return fail(error.message);
+
+  revalidatePath("/admin/careers/applications");
+  return ok({ updated: count ?? ids.length });
+}
+
 type AppRel = { title: string } | { title: string }[] | null;
 function roleFrom(rel: AppRel): string {
   if (Array.isArray(rel)) return rel[0]?.title ?? "the role";
