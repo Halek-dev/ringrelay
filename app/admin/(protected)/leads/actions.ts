@@ -16,7 +16,12 @@ import type {
 import { parseCsvTier, TIER_RANK } from "@/lib/qualification";
 import { parseCsv } from "@/lib/csv";
 import { sendEmailBatch } from "@/lib/email/send";
-import { substituteVars, type EmailVars } from "@/lib/email/layout";
+import {
+  substituteVars,
+  OUTREACH_CTA,
+  type EmailCta,
+  type EmailVars,
+} from "@/lib/email/layout";
 
 // Add captures the basics only. New leads always start as "new".
 export type NewLeadInput = {
@@ -405,7 +410,13 @@ function leadVars(lead: LeadEmailRow, sender: string): EmailVars {
 async function dispatchLeadEmails(
   supabase: ReturnType<typeof createClient>,
   profileId: string,
-  items: { ref: string; to: string; subject: string; bodyText: string }[],
+  items: {
+    ref: string;
+    to: string;
+    subject: string;
+    bodyText: string;
+    cta?: EmailCta;
+  }[],
   touchType: TouchType,
 ): Promise<{ sent: number; failed: number }> {
   const { successRefs, failedRefs } = await sendEmailBatch(items);
@@ -473,6 +484,7 @@ export async function sendBulkLeadEmail(input: {
       to: l.email as string,
       subject: substituteVars(input.subject, vars),
       bodyText: substituteVars(input.body, vars),
+      cta: OUTREACH_CTA,
     };
   });
 
@@ -523,7 +535,13 @@ export async function sendPersonalizedOutreach(input: {
   const sender = profile.full_name?.trim() || "the Ring Relay team";
   let skippedNoEmail = 0;
   let skippedNoMessage = 0;
-  const items: { ref: string; to: string; subject: string; bodyText: string }[] = [];
+  const items: {
+    ref: string;
+    to: string;
+    subject: string;
+    bodyText: string;
+    cta?: EmailCta;
+  }[] = [];
 
   for (const l of leads as (LeadEmailRow & {
     outreach_message: string | null;
@@ -547,6 +565,7 @@ export async function sendPersonalizedOutreach(input: {
       to: l.email,
       subject: substituteVars(perLeadSubject || input.subject, vars),
       bodyText: substituteVars(message, vars),
+      cta: OUTREACH_CTA,
     });
   }
 

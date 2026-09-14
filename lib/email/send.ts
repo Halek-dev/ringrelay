@@ -4,6 +4,7 @@ import type { EmailTemplate, EmailTemplateKey } from "@/lib/db-types";
 import {
   renderEmailHtml,
   substituteVars,
+  type EmailCta,
   type EmailVars,
 } from "@/lib/email/layout";
 
@@ -25,6 +26,7 @@ export async function sendEmail(input: {
   to: string;
   subject: string;
   bodyText: string;
+  cta?: EmailCta;
 }): Promise<SendResult> {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.EMAIL_FROM;
@@ -46,7 +48,7 @@ export async function sendEmail(input: {
         from,
         to: [input.to],
         subject: input.subject,
-        html: renderEmailHtml(input.bodyText),
+        html: renderEmailHtml(input.bodyText, input.cta),
         text: input.bodyText,
         ...(process.env.EMAIL_REPLY_TO
           ? { reply_to: process.env.EMAIL_REPLY_TO }
@@ -73,6 +75,7 @@ export type BatchItem = {
   to: string;
   subject: string;
   bodyText: string;
+  cta?: EmailCta;
 };
 
 /**
@@ -106,7 +109,7 @@ export async function sendEmailBatch(
       from,
       to: [m.to],
       subject: m.subject,
-      html: renderEmailHtml(m.bodyText),
+      html: renderEmailHtml(m.bodyText, m.cta),
       text: m.bodyText,
       ...(replyTo ? { reply_to: replyTo } : {}),
     }));

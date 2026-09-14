@@ -41,9 +41,23 @@ function textToHtml(text: string): string {
 
 const SITE_URL = "https://tryringrelay.com";
 
+export type EmailCta = { label: string; url: string };
+
+/** The call-to-action added to cold outreach emails (not careers mail). */
+export const OUTREACH_CTA: EmailCta = {
+  label: "Book a 15-minute call",
+  url: `${SITE_URL}/book`,
+};
+
 /** Wrap rendered body text in the fixed Ring Relay email design. */
-export function renderEmailHtml(bodyText: string): string {
+export function renderEmailHtml(bodyText: string, cta?: EmailCta): string {
   const content = textToHtml(bodyText);
+  const ctaBlock = cta
+    ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px 0 2px 0;"><tr>
+                <td style="background-color:#ea580c;border-radius:8px;">
+                  <a href="${cta.url}" style="display:inline-block;padding:12px 22px;font-family:Arial,Helvetica,sans-serif;font-size:14.5px;font-weight:bold;color:#ffffff;text-decoration:none;">${cta.label}</a>
+                </td></tr></table>`
+    : "";
   return `<!doctype html>
 <html>
 <body style="margin:0;padding:0;background-color:#efe9df;">
@@ -64,6 +78,7 @@ export function renderEmailHtml(bodyText: string): string {
           <tr>
             <td style="background-color:#ffffff;padding:28px 28px 22px 28px;font-family:Arial,Helvetica,sans-serif;">
               ${content}
+              ${ctaBlock}
             </td>
           </tr>
           <tr>
