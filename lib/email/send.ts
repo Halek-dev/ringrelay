@@ -102,6 +102,7 @@ export async function sendEmailBatch(
 
   const successRefs: string[] = [];
   const failedRefs: string[] = [];
+  let lastError: string | undefined;
 
   for (let i = 0; i < items.length; i += BATCH_MAX) {
     const chunk = items.slice(i, i + BATCH_MAX);
@@ -122,20 +123,30 @@ export async function sendEmailBatch(
         },
         body: JSON.stringify(payload),
       });
-      if (res.ok) {
+      const json = (await res.json().catch(() => null)) as
+        | { data?: { id: string }[]; message?: string; name?: string }
+        | null;
+      // A real send returns 2xx with a `data` array of message ids. Anything
+      // else (including a 2xx that carries an error, as the batch endpoint can
+      // when a recipient is blocked in test mode) is a failure, so we never
+      // mark an undelivered email as sent.
+      if (res.ok && Array.isArray(json?.data) && json.data.length > 0) {
         for (const m of chunk) successRefs.push(m.ref);
       } else {
-        const detail = await res.text().catch(() => "");
-        console.error("[email] batch error:", res.status, detail.slice(0, 300));
+        lastError =
+          json?.message ||
+          `The email service refused the send (HTTP ${res.status}).`;
+        console.error("[email] batch rejected:", res.status, lastError);
         for (const m of chunk) failedRefs.push(m.ref);
       }
     } catch (err) {
       console.error("[email] batch send failed:", err);
+      lastError = "Could not reach the email service.";
       for (const m of chunk) failedRefs.push(m.ref);
     }
   }
 
-  return { successRefs, failedRefs };
+  return { successRefs, failedRefs, error: lastError };
 }
 
 /** Load an active template by key. Null when missing or switched off. */

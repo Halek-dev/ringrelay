@@ -418,8 +418,8 @@ async function dispatchLeadEmails(
     cta?: EmailCta;
   }[],
   touchType: TouchType,
-): Promise<{ sent: number; failed: number }> {
-  const { successRefs, failedRefs } = await sendEmailBatch(items);
+): Promise<{ sent: number; failed: number; error?: string }> {
+  const { successRefs, failedRefs, error } = await sendEmailBatch(items);
 
   if (successRefs.length > 0) {
     const now = new Date().toISOString();
@@ -442,7 +442,7 @@ async function dispatchLeadEmails(
       .in("id", successRefs);
   }
 
-  return { sent: successRefs.length, failed: failedRefs.length };
+  return { sent: successRefs.length, failed: failedRefs.length, error };
 }
 
 /**
@@ -488,12 +488,13 @@ export async function sendBulkLeadEmail(input: {
     };
   });
 
-  const { sent, failed } = await dispatchLeadEmails(
+  const { sent, failed, error: sendError } = await dispatchLeadEmails(
     supabase,
     profile.id,
     items,
     input.touchType,
   );
+  if (sent === 0 && sendError) return fail(sendError);
 
   revalidatePath("/admin/leads");
   revalidatePath("/admin");
@@ -574,12 +575,13 @@ export async function sendPersonalizedOutreach(input: {
       "Nothing to send: the selected leads have no personalized message, or no email.",
     );
 
-  const { sent, failed } = await dispatchLeadEmails(
+  const { sent, failed, error: sendError } = await dispatchLeadEmails(
     supabase,
     profile.id,
     items,
     "first_touch",
   );
+  if (sent === 0 && sendError) return fail(sendError);
 
   revalidatePath("/admin/leads");
   revalidatePath("/admin");
