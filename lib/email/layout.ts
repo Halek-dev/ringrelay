@@ -2,9 +2,10 @@
  * Branded email rendering. Client-safe on purpose: the admin editor imports
  * this to show a live preview that is pixel-identical to what actually sends.
  *
- * The design is a fixed wrapper (wordmark, accent bar, footer) around plain
- * text the owner writes in /admin/emails. Inline styles and table layout only,
- * because email clients ignore stylesheets. The owner edits words, never HTML.
+ * The design is a fixed wrapper (a bold orange header band with the wordmark
+ * and tagline, a white body, and a quiet footer) around plain text the owner
+ * writes in /admin/emails. Inline styles and table layout only, because email
+ * clients ignore stylesheets. The owner edits words, never HTML.
  */
 
 export type EmailVars = Record<string, string>;
@@ -45,29 +46,30 @@ export function renderEmailHtml(bodyText: string): string {
   const content = textToHtml(bodyText);
   return `<!doctype html>
 <html>
-<body style="margin:0;padding:0;background-color:#f5f1ea;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f1ea;padding:24px 12px;">
+<body style="margin:0;padding:0;background-color:#efe9df;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#efe9df;padding:24px 12px;">
     <tr>
       <td align="center">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;border:1px solid #e6ded2;border-radius:12px;overflow:hidden;">
           <tr>
-            <td style="height:5px;background-color:#ea580c;border-radius:3px 3px 0 0;"></td>
-          </tr>
-          <tr>
-            <td style="background-color:#ffffff;border:1px solid #e6ded2;border-top:0;border-radius:0 0 12px 12px;padding:32px 28px;">
-              <div style="font-family:Arial,Helvetica,sans-serif;font-size:20px;font-weight:bold;margin-bottom:24px;color:#101826;">
-                Ring<span style="color:#ea580c;">Relay</span>
+            <td style="background-color:#ea580c;padding:22px 28px 20px 28px;">
+              <div style="font-family:Arial,Helvetica,sans-serif;font-size:21px;font-weight:bold;color:#ffffff;letter-spacing:.01em;">
+                Ring Relay
               </div>
-              <div style="font-family:Arial,Helvetica,sans-serif;">
-                ${content}
+              <div style="font-family:Arial,Helvetica,sans-serif;font-size:12.5px;font-weight:600;color:#ffd9c4;margin-top:4px;">
+                More reviews. More calls. On autopilot.
               </div>
             </td>
           </tr>
           <tr>
-            <td style="padding:18px 8px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#8a8577;" align="center">
-              Ring Relay. More reviews. More calls. On autopilot.<br/>
-              <a href="${SITE_URL}" style="color:#8a8577;">tryringrelay.com</a> &nbsp;·&nbsp;
-              <a href="${SITE_URL}/privacy" style="color:#8a8577;">Privacy</a>
+            <td style="background-color:#ffffff;padding:28px 28px 22px 28px;font-family:Arial,Helvetica,sans-serif;">
+              ${content}
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color:#ffffff;padding:0 28px 24px 28px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#9a9484;">
+              <a href="${SITE_URL}" style="color:#9a9484;">tryringrelay.com</a> &nbsp;·&nbsp;
+              <a href="${SITE_URL}/privacy" style="color:#9a9484;">Privacy</a>
             </td>
           </tr>
         </table>
