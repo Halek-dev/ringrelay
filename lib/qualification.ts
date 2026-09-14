@@ -1,17 +1,20 @@
-import type {
-  LeadIndustry,
-  LeadStatus,
-  LeadTier,
-  QualificationAnswers,
-} from "@/lib/db-types";
+import type { LeadStatus, LeadTier, QualificationAnswers } from "@/lib/db-types";
 
 /**
- * The 7-step lead qualification funnel. This is the SINGLE source of truth for
- * both the client (which renders the outcome buttons) and the server (which
- * computes the score), so the two can never drift apart.
+ * The lead qualification funnel for Ring Relay's review-request product. This
+ * is the SINGLE source of truth for both the client (which renders the outcome
+ * buttons) and the server (which computes the score), so the two never drift.
  *
- * Steps 1 to 6 are choices. Step 7 is the computed score the user confirms.
- * A `kill` outcome stops the funnel and marks the lead killed.
+ * It implements the ICP scoring model directly:
+ *   Few Google reviews (< 50)      +3
+ *   Stale reviews (90+ days)        +3
+ *   Runs Google Ads / LSAs         +3
+ *   Active on Facebook / Instagram +1
+ *   In business 5+ years           +1
+ *   Tiers: A 8+ · B 5 to 7 · C under 5
+ *
+ * Gate steps carry `kill` outcomes that remove the lead: franchise, wrong
+ * trade, closed or unclaimed profile, no website, already on a review platform.
  */
 export type StepOutcome = {
   value: string;
@@ -22,7 +25,7 @@ export type StepOutcome = {
 
 export type FunnelStep = {
   key: string;
-  step: number; // 1-based, for "Step N of 7"
+  step: number; // 1-based, for "Step N of N"
   title: string;
   instruction: string;
   outcomes: StepOutcome[];
@@ -34,94 +37,112 @@ export const FUNNEL_STEPS: FunnelStep[] = [
     step: 1,
     title: "Type check",
     instruction:
-      "Is this an independent HVAC, plumbing, or restoration business? Not a franchise, directory, or wrong trade.",
+      "Is this an independent home-services business (HVAC, roofing, or a related trade)? Not a franchise or national chain.",
     outcomes: [
-      { value: "pass", label: "Pass", points: 0 },
-      { value: "kill_wrong_type", label: "Kill: wrong type", points: 0, kill: true },
+      { value: "pass", label: "Independent trade business", points: 0 },
+      { value: "kill_franchise", label: "Kill: franchise or national chain", points: 0, kill: true },
+      { value: "kill_wrong", label: "Kill: wrong trade or not home services", points: 0, kill: true },
     ],
   },
   {
-    key: "size_check",
+    key: "status_check",
     step: 2,
-    title: "Size check",
+    title: "Profile check",
     instruction:
-      "Owner-operator or small shop? Look for an owner's name in the business name or a small local team.",
+      "Look up their Google Business Profile. Is it claimed and the business open? Unclaimed or permanently closed is a kill.",
     outcomes: [
-      { value: "small", label: "Pass (owner-run or small)", points: 20 },
-      { value: "medium", label: "Medium (6 to 15)", points: 10 },
-      { value: "kill_big", label: "Kill: too big (has receptionist)", points: 0, kill: true },
+      { value: "active", label: "Claimed and open", points: 0 },
+      { value: "kill_closed", label: "Kill: closed or unclaimed profile", points: 0, kill: true },
     ],
   },
   {
-    key: "inbound_gap",
+    key: "website",
     step: 3,
-    title: "Inbound-gap check",
+    title: "Website check",
     instruction:
-      "Look at their web presence. No website or a thin one-page site is a good sign. It means they are not handling calls well.",
+      "Do they have a real website (not just a Facebook page)? A website shows they invest in marketing. No website is a kill.",
     outcomes: [
-      { value: "no_thin", label: "Strong: no or thin site", points: 15 },
-      { value: "slick", label: "Weak: slick site with booking", points: 3 },
+      { value: "has_site", label: "Has a website", points: 0 },
+      { value: "kill_no_site", label: "Kill: no website", points: 0, kill: true },
     ],
   },
   {
-    key: "demand",
+    key: "platform_check",
     step: 4,
-    title: "Demand check",
+    title: "Review platform check",
     instruction:
-      "Check their Google reviews. A healthy review count means real call volume, which means real calls to miss.",
+      "Are they already using a review platform (Podium, Birdeye, NiceJob, Broadly, GatherUp, or similar)? If so, they are not our customer.",
     outcomes: [
-      { value: "has_reviews", label: "Strong: has reviews", points: 12 },
-      { value: "few", label: "Weak: few or no reviews", points: 4 },
+      { value: "none", label: "Not on a review platform", points: 0 },
+      { value: "kill_competitor", label: "Kill: already uses a review platform", points: 0, kill: true },
     ],
   },
   {
-    key: "call_test",
+    key: "review_count",
     step: 5,
-    title: "Call test",
+    title: "Review count",
     instruction:
-      "Call the number once during business hours from a blocked line. Don't leave a message. What happened? If an AI or automated voice answers, note whether it says it only covers after hours.",
+      "How many Google reviews do they have? Fewer than 50 is the pain we solve and scores. 50 or more scores nothing on this axis.",
     outcomes: [
-      { value: "voicemail", label: "Voicemail (hottest)", points: 30 },
-      // A prospect already running an AI receptionist has proven pain and an
-      // existing budget, which is worth more than a live human answering (0)
-      // and more than a generic answering service (15). It scores below a
-      // confirmed missed call (30) because there is no direct proof of a lost
-      // lead. It is a switching sale, not a discovery sale.
-      { value: "ai_receptionist", label: "AI receptionist already (competitor)", points: 18 },
-      { value: "answering_service", label: "Answering service", points: 15 },
-      { value: "answered_live", label: "Answered live fast", points: 0 },
+      { value: "few", label: "Under 50 reviews", points: 3 },
+      { value: "many", label: "50 or more reviews", points: 0 },
     ],
   },
   {
-    key: "reachability",
+    key: "freshness",
     step: 6,
-    title: "Reachability",
+    title: "Review freshness",
     instruction:
-      "Can you find the owner's name plus a public email, contact form, or LinkedIn?",
+      "When was their most recent Google review? No new review in 90+ days looks stale and scores. Recent reviews score nothing here.",
     outcomes: [
-      { value: "found", label: "Yes: found a way in", points: 10 },
-      { value: "gatekept", label: "No: gatekept", points: 2 },
+      { value: "stale", label: "No review in 90+ days", points: 3 },
+      { value: "recent", label: "Has recent reviews", points: 0 },
+    ],
+  },
+  {
+    key: "ads",
+    step: 7,
+    title: "Paid ads",
+    instruction:
+      "Are they running Google Ads or Local Services Ads? Paying for leads means more reviews raise their conversion, so this scores.",
+    outcomes: [
+      { value: "yes", label: "Runs Google Ads or LSAs", points: 3 },
+      { value: "no", label: "No paid ads found", points: 0 },
+    ],
+  },
+  {
+    key: "social",
+    step: 8,
+    title: "Social presence",
+    instruction:
+      "Are they active on Facebook or Instagram? An active social presence is a small positive signal.",
+    outcomes: [
+      { value: "yes", label: "Active on Facebook or Instagram", points: 1 },
+      { value: "no", label: "No active social", points: 0 },
+    ],
+  },
+  {
+    key: "tenure",
+    step: 9,
+    title: "Tenure",
+    instruction:
+      "How long have they been in business? Five or more years is a small positive signal. (Under two years usually is not a fit.)",
+    outcomes: [
+      { value: "5plus", label: "5+ years in business", points: 1 },
+      { value: "under5", label: "Under 5 years", points: 0 },
     ],
   },
 ];
 
-export const RESULT_STEP = 7; // "Score and sort"
-export const TOTAL_STEPS = 7;
-export const INPUT_STEPS = FUNNEL_STEPS.length; // 6
+export const INPUT_STEPS = FUNNEL_STEPS.length; // 9
+export const RESULT_STEP = INPUT_STEPS + 1; // "Score and tier"
+export const TOTAL_STEPS = RESULT_STEP; // 10
 
-// Industry bonus is added when the type check passes.
-const INDUSTRY_BONUS: Record<LeadIndustry, number> = {
-  restoration: 13,
-  hvac: 12,
-  plumbing: 11,
-  roofing: 0,
-  electrical: 0,
-  other: 0,
-};
-
-export function industryBonus(industry: LeadIndustry): number {
-  return INDUSTRY_BONUS[industry] ?? 0;
-}
+/** The maximum possible score, for the transparent breakdown display. */
+export const MAX_SCORE = FUNNEL_STEPS.reduce(
+  (sum, step) => sum + Math.max(0, ...step.outcomes.map((o) => o.points)),
+  0,
+); // 11
 
 function outcomeFor(step: FunnelStep, value: string | undefined): StepOutcome | undefined {
   return step.outcomes.find((o) => o.value === value);
@@ -149,36 +170,31 @@ export function killInfo(
 /** Per-step point contributions, for the transparent breakdown. */
 export function scoreBreakdown(
   a: QualificationAnswers,
-  industry: LeadIndustry,
 ): { label: string; points: number }[] {
   const rows: { label: string; points: number }[] = [];
   for (const step of FUNNEL_STEPS) {
     const oc = outcomeFor(step, a[step.key]);
-    if (!oc) continue;
-    if (step.key === "type_check" && oc.value === "pass") {
-      rows.push({ label: `Industry (${industry})`, points: industryBonus(industry) });
-    } else if (oc.points > 0) {
+    if (oc && oc.points > 0) {
       rows.push({ label: `${step.title}: ${oc.label}`, points: oc.points });
     }
   }
   return rows;
 }
 
-export function computeScore(a: QualificationAnswers, industry: LeadIndustry): number {
+export function computeScore(a: QualificationAnswers): number {
   let score = 0;
   for (const step of FUNNEL_STEPS) {
     const oc = outcomeFor(step, a[step.key]);
     if (oc) score += oc.points;
   }
-  if (a["type_check"] === "pass") score += industryBonus(industry);
   return score;
 }
 
+/** ICP tiers: A 8+, B 5 to 7, C under 5. Mapped onto the tier enum. */
 export function computeTier(score: number): LeadTier {
-  if (score >= 75) return "hot";
-  if (score >= 50) return "warm";
-  if (score >= 30) return "cool";
-  return "skip";
+  if (score >= 8) return "hot"; // Tier A
+  if (score >= 5) return "warm"; // Tier B
+  return "cool"; // Tier C
 }
 
 export function deriveStatus(a: QualificationAnswers): LeadStatus {
@@ -189,7 +205,7 @@ export function deriveStatus(a: QualificationAnswers): LeadStatus {
   return "in_progress";
 }
 
-/* --- funnel → outreach recommendation (Fix 2f) --- */
+/* --- funnel to outreach recommendation --- */
 
 export type TierPlan = {
   headline: string;
@@ -199,66 +215,24 @@ export type TierPlan = {
 
 export const TIER_PLAN: Record<LeadTier, TierPlan> = {
   hot: {
-    headline: "Hot lead",
-    action: "Send a Loom-led first touch today.",
-    templateHint: "loom",
+    headline: "Tier A: reach out now",
+    action:
+      "Strong review pain and they pay for ads. Lead with their review gap against the top local competitor.",
+    templateHint: "gap",
   },
   warm: {
-    headline: "Warm lead",
-    action: "Send the proof-led email or SMS this week.",
-    templateHint: "proof",
+    headline: "Tier B: good fit",
+    action: "Solid signals. Send the value-led first touch this week.",
+    templateHint: "value",
   },
   cool: {
-    headline: "Cool lead",
-    action: "Single batch touch only. Do not chase.",
+    headline: "Tier C: low priority",
+    action: "Weak pain signals. Single batch touch only, or hold for later.",
     templateHint: "batch",
   },
   skip: {
     headline: "Skip",
-    action: "Do not contact. Score is below the bar.",
+    action: "Not a fit. Do not contact.",
     templateHint: null,
   },
 };
-
-/* --- competitor (AI receptionist) switching pitch (Change 1) --- */
-
-export const AI_RECEPTIONIST = "ai_receptionist";
-
-/** True when the call test found a competitor AI receptionist. */
-export function isAiReceptionist(a: QualificationAnswers): boolean {
-  return a["call_test"] === AI_RECEPTIONIST;
-}
-
-export type SwitchingPlan = {
-  headline: string;
-  action: string;
-  opener: string;
-  templateCategory: "switching_pitch_after_hours" | "switching_pitch_quality";
-};
-
-/**
- * A prospect already on an AI receptionist is a switching sale, not the usual
- * missed-call pitch. The angle depends on whether their AI only covers after
- * hours: if it does, their daytime calls are still going unanswered, which is
- * the gap we sell into.
- */
-export function switchingPlan(afterHoursOnly: boolean): SwitchingPlan {
-  if (afterHoursOnly) {
-    return {
-      headline: "Competitor switch: attack the daytime gap",
-      action:
-        "Their AI only covers after hours. Lead with the daytime gap, the calls that come in while the crew is on a job.",
-      opener:
-        "Called your line at 2pm and got Ruby, who told me she only handles after-hours. What happens to the calls that come in while your crew is on a roof at 2pm?",
-      templateCategory: "switching_pitch_after_hours",
-    };
-  }
-  return {
-    headline: "Competitor switch: sell on quality",
-    action:
-      "They already buy the category, so sell on quality, not on whether they need it.",
-    opener:
-      "Called your line and got your AI receptionist. Curious what made you go that route, and whether it's actually booking jobs or just taking messages.",
-    templateCategory: "switching_pitch_quality",
-  };
-}

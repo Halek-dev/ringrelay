@@ -115,7 +115,7 @@ RLS is enabled on every table. Highlights:
 | Dashboard KPIs / activity | computed from `leads` + `clients` |
 | Today's goals | derived from real rows: leads created, touches in `outreach_log`, and leads whose status moved forward today |
 | Daily plan + streak | `lib/data/daily-plan.ts` — every counter is derived from actual activity (no manual check-offs); streak = consecutive days all three goals were met |
-| Leads | table/kanban sorted hottest-first, add modal (basics only), detail drawer with the 7-step qualification funnel, owner delete |
+| Leads | table/kanban sorted hottest-first, add modal (basics only), detail drawer with the 9-step qualification funnel, owner delete |
 | Clients | table → drawer with live `onboarding_steps`; flips to `live` when all done |
 | Templates | owner CRUD, copy-to-clipboard for all |
 | Team | owner-only; add member via service-role action, role toggle, remove |
@@ -125,19 +125,22 @@ pages (`app/admin/(protected)/<section>/actions.ts`).
 
 ### Lead qualification funnel
 
-Workflow: **Add lead (basics only) → open it → run the 7-step funnel → get
+Workflow: **Add lead (basics only) → open it → run the 9-step funnel → get
 score/tier → send the matching message.** The add form captures only the basics
-(business, contact, **phone required**, email, city, industry, source, notes) —
+(business, contact, **phone required**, email, city, industry, source, notes);
 status is **not** set there. Each new lead starts as `new`.
 
 The funnel lives on the lead detail drawer ([`components/admin/leads-view.tsx`](components/admin/leads-view.tsx),
-logic in [`lib/qualification.ts`](lib/qualification.ts)): type check → size check →
-inbound gap → demand → call test → reachability, each weighted, producing a
-**score (0–100)** and **tier (hot ≥70 / warm ≥45 / cold)**. Score/tier/status are
+logic in [`lib/qualification.ts`](lib/qualification.ts)). The first four steps are
+gates (type check, profile check, website check, review-platform check); a kill
+outcome stops the lead. The last five are the ICP scoring signals: review count
+under 50 (+3), no review in 90+ days (+3), runs Google Ads/LSAs (+3), active on
+Facebook or Instagram (+1), and 5+ years in business (+1), producing a **score
+(0 to 11)** and **tier (A hot >=8 / B warm >=5 / C cool)**. Score/tier/status are
 recomputed **server-side** (`saveQualification`) and written to the lead, so the
 list sorts hottest-first. The funnel drives status: `new → in_progress →
-qualified | lost` (a "gate" step answered No — wrong trade or no missed calls —
-disqualifies). Edit weights/thresholds/questions in `lib/qualification.ts`.
+qualified | killed` (a gate step disqualifies). Edit weights/thresholds/questions
+in `lib/qualification.ts`.
 
 ## Still frontend-only (by design)
 
@@ -148,109 +151,20 @@ disqualifies). Edit weights/thresholds/questions in `lib/qualification.ts`.
   `/admin/testimonials`. Promote to a Supabase `testimonials` table when you want
   them shared across devices.
 
-## Browser voice demo (`/demo`)
+## Interactive review demo (`/demo`)
 
-A live, in-browser voice demo of the AI receptionist — a prospect clicks **Talk**,
-speaks through their mic, and hears the AI answer out loud, qualify the call, and
-book an appointment. No phone call, no telephony — everything runs in the browser
-plus two API routes that keep keys server-side.
+A self-contained, in-browser illustration of how Ring Relay works: a prospect
+types their business name, hits **Run**, and watches the review request go out,
+a 5-star review land, and the business climb the Google Maps 3-pack as the
+review count ticks up. No API keys, no telephony, no data leaves the browser.
 
-**Pipeline:** mic → browser Speech Recognition (free, client-side) → Claude
-(`app/api/demo/chat`) → ElevenLabs TTS (`app/api/demo/speak`) → audio plays →
-listen again. Bookings save to Supabase (`demo_bookings`).
-
-### Setup
-
-1. Add three keys to `.env.local` (all **server-side only**, never exposed to the
-   browser):
-   ```
-   ANTHROPIC_API_KEY=sk-ant-...
-   ELEVENLABS_API_KEY=...
-   ELEVENLABS_VOICE_ID=...        # ElevenLabs → Voices → copy a voice ID
-   ```
-   (Supabase vars are already needed for the admin console; the demo reuses the
-   service-role key to save bookings.)
-2. Create the bookings table — Supabase → SQL Editor → run
-   [`supabase/migrations/0002_demo_bookings.sql`](supabase/migrations/0002_demo_bookings.sql).
-3. Run the app and open **http://localhost:3000/demo** in **Google Chrome**.
-
-### How to test (Windows)
-
-```cmd
-npm run dev
-```
-
-- Open `http://localhost:3000/demo` in **Chrome** (the Web Speech API has the best
-  support there). Click **Talk**, allow the mic, and say
-  *"My water heater is leaking, can someone come out?"* — the receptionist replies
-  out loud. Give it your name, a number, and a time and it books you in; the
-  **Appointment booked ✓** card shows the captured details and the row lands in
-  `demo_bookings`.
-- **No mic / not Chrome?** The page detects it and shows a "use Chrome" note plus a
-  **Type instead** button — the same conversation works by typing.
-- **Mic blocked?** The page explains how to re-enable it from the address bar.
-- Without the keys set, the demo loads and the mic works, but the AI turn returns a
-  clear "not configured" error — add the two keys to fix.
-
-### What's where
-
-- Persona + system prompt + booking tool: [`lib/demo/config.ts`](lib/demo/config.ts)
-  (edit the `RECEPTIONIST` object to change the sample company).
-- Brain (Claude `claude-opus-4-8`, tool use, saves booking):
-  [`app/api/demo/chat/route.ts`](app/api/demo/chat/route.ts).
-- Voice (ElevenLabs TTS, streamed): [`app/api/demo/speak/route.ts`](app/api/demo/speak/route.ts).
-- UI (mic states, transcript, booking card, fallbacks):
-  [`components/demo/voice-demo.tsx`](components/demo/voice-demo.tsx).
-
-### Latency design (why it feels instant)
-
-The pipeline overlaps its slow steps and hides the thinking time so there's no
-silent gap after the caller stops talking:
-
-- **Sentence streaming (the real fix)** — `/api/demo/chat` streams Claude's
-  reply as NDJSON, emitting the **first speakable clause** the moment it lands
-  (breaking at the first comma / dash / period) and then each sentence after
-  that. The browser sends each chunk to ElevenLabs and plays them in order, so
-  TTS overlaps Claude instead of waiting for the whole reply. On a normal
-  connection the receptionist starts talking within a few hundred ms of Claude's
-  first token — usually fast enough that no filler is needed.
-- **Fillers only on genuinely slow turns** — no filler plays up front. After the
-  caller stops, if Claude *still* hasn't started after `FILLER_THRESHOLD_MS`
-  (700ms, in `voice-demo.tsx`), one very short acknowledgment plays
-  (*"Mm-hm," "Got it," "Okay," "Sure"* — see `FILLERS` in `lib/demo/config.ts`).
-  The same one never plays twice in a row. Most turns use no filler at all.
-- **Pre-generated audio** — the greeting + those short acknowledgments are
-  generated by ElevenLabs once and cached (client blob + server in-memory), so
-  when a filler *is* needed it plays with zero delay.
-- **Fast models** — Claude `claude-haiku-4-5` + ElevenLabs `eleven_flash_v2_5`
-  (their lowest-latency voice), replies capped to one or two short sentences.
-
-**How to verify the streaming (Chrome DevTools → Console):** the demo logs two
-numbers each turn:
-
-```
-[demo] first sentence from Claude in 520ms
-[demo] first real audio playing in 840ms (no filler)
-```
-
-- **first sentence** = time from you finishing speaking to Claude's first chunk
-  arriving. This is the real latency lever — it's Claude's time-to-first-token.
-- **first real audio** = when the receptionist actually starts talking, and
-  whether a filler was needed. `(no filler)` on most turns is the goal.
-
-If "first sentence" is consistently under ~1s you'll rarely see a filler. If it's
-high, that's Claude's TTFT / your network, not the pipeline — the DevTools
-**Network** tab confirms the `chat` request streams (its response body grows over
-time rather than arriving all at once). The server console also logs
-`[demo] first chunk emitted in Xms` (Claude's contribution only, excluding TTS).
-
-**Phone check:** during a booking, give a deliberately broken number like
-*"+234 911 091 1561 0713"* — the receptionist will notice it's too long and ask
-you to repeat it instead of booking (both a prompt-level check and a code-level
-digit-count backstop in `lib/demo/config.ts` → `validatePhone`).
-
-To trade speed for quality, edit `CHAT_MODEL` / `TTS_MODEL` in
-`lib/demo/config.ts` (e.g. `claude-opus-4-8`, `eleven_turbo_v2_5`).
+- Everything is client-side in
+  [`components/demo/review-demo.tsx`](components/demo/review-demo.tsx): a small
+  step machine drives the animation on timers; nothing is sent or stored.
+- The page shell (hazard stripe, back link, book-a-demo CTA, legal footer) is in
+  [`app/demo/page.tsx`](app/demo/page.tsx).
+- Because it needs no keys, it always works in every browser. Test it with
+  `npm run dev` and open `http://localhost:3000/demo`.
 
 ## SEO
 

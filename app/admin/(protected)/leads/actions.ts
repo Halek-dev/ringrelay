@@ -20,7 +20,7 @@ import {
   killInfo,
 } from "@/lib/qualification";
 
-// Add captures the basics only. Status is NOT set here — new leads always
+// Add captures the basics only. Status is NOT set here; new leads always
 // start as "new" and the qualification funnel drives status from there.
 export type NewLeadInput = {
   business_name: string;
@@ -72,7 +72,6 @@ export async function createLead(
  */
 export async function saveQualification(
   leadId: string,
-  industry: LeadIndustry,
   answers: QualificationAnswers,
 ): Promise<ActionResult<{ score: number; tier: LeadTier; status: LeadStatus }>> {
   await assertProfile();
@@ -80,7 +79,7 @@ export async function saveQualification(
 
   // Score and status are always recomputed server-side, never trusted from
   // the client, so a lead's tier is reproducible from its stored answers.
-  const score = computeScore(answers, industry);
+  const score = computeScore(answers);
   const tier = computeTier(score);
   const status = deriveStatus(answers);
   const kill = killInfo(answers);
@@ -158,51 +157,6 @@ export async function markTouchReplied(
   if (error) return fail(error.message);
   revalidatePath("/admin/leads");
   revalidatePath("/admin");
-  return ok();
-}
-
-/**
- * Save the competitor detail captured on the call-test step when a prospect is
- * already running an AI receptionist. The after-hours flag drives which
- * switching pitch we recommend; the greeting is kept on the lead's notes under
- * a marker line so re-saving replaces it rather than piling up duplicates.
- */
-const COMPETITOR_NOTE_MARK = "[Competitor AI]";
-
-export async function setCompetitorInfo(input: {
-  leadId: string;
-  afterHoursOnly: boolean;
-  greeting: string;
-}): Promise<ActionResult> {
-  await assertProfile();
-  const supabase = createClient();
-
-  const { data: row } = await supabase
-    .from("leads")
-    .select("notes")
-    .eq("id", input.leadId)
-    .single();
-
-  const prior = ((row?.notes as string | null) ?? "")
-    .split("\n")
-    .filter((line) => !line.startsWith(COMPETITOR_NOTE_MARK))
-    .join("\n")
-    .trim();
-  const greeting = input.greeting.trim();
-  const merged = greeting
-    ? `${prior ? prior + "\n" : ""}${COMPETITOR_NOTE_MARK} ${greeting}`
-    : prior;
-
-  const { error } = await supabase
-    .from("leads")
-    .update({
-      competitor_after_hours_only: input.afterHoursOnly,
-      notes: merged || null,
-    })
-    .eq("id", input.leadId);
-
-  if (error) return fail(error.message);
-  revalidatePath("/admin/leads");
   return ok();
 }
 
