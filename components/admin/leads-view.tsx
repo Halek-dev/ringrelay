@@ -30,6 +30,7 @@ import {
   AlertTriangle,
   Loader2,
   Upload,
+  Reply,
 } from "lucide-react";
 import { LeadBadge, TierBadge, ProgressBar } from "@/components/admin/ui";
 import { useToast } from "@/components/ui/toaster";
@@ -40,6 +41,7 @@ import {
   logTouch,
   importLeads,
   sendBulkLeadEmail,
+  sendPersonalizedOutreach,
   type ImportResult,
 } from "@/app/admin/(protected)/leads/actions";
 import { substituteVars } from "@/lib/email/layout";
@@ -119,7 +121,9 @@ export function LeadsView({
   const [sort, setSort] = useState<SortState>({ key: "score", dir: "desc" });
   const [activeId, setActiveId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [composeOpen, setComposeOpen] = useState(false);
+  const [outreachOpen, setOutreachOpen] = useState(false);
+  const [followupOpen, setFollowupOpen] = useState(false);
+  const [customOpen, setCustomOpen] = useState(false);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -275,18 +279,32 @@ export function LeadsView({
         </div>
       </div>
 
-      {/* Bulk bar: tick leads, then email the whole batch one message. */}
+      {/* Bulk bar: tick leads, then send outreach, a follow-up, or a custom note. */}
       {view === "table" && selectedIds.length > 0 && (
-        <div className="sticky top-3 z-10 mb-4 flex flex-wrap items-center gap-3 rounded-[12px] border border-acc/30 bg-acc/[0.08] px-4 py-3 shadow-soft backdrop-blur">
-          <span className="text-[13.5px] font-bold text-ink">
+        <div className="sticky top-3 z-10 mb-4 flex flex-wrap items-center gap-2 rounded-[12px] border border-acc/30 bg-acc/[0.08] px-4 py-3 shadow-soft backdrop-blur">
+          <span className="mr-1 text-[13.5px] font-bold text-ink">
             {selectedIds.length} selected
           </span>
           <button
             type="button"
-            onClick={() => setComposeOpen(true)}
+            onClick={() => setOutreachOpen(true)}
             className="inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-acc px-4 py-[8px] text-[13px] font-bold text-white hover:bg-acc-b"
           >
-            <Send size={13} /> Email {selectedIds.length}
+            <Send size={13} /> Send outreach
+          </button>
+          <button
+            type="button"
+            onClick={() => setFollowupOpen(true)}
+            className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border-[1.5px] border-line2 bg-card px-4 py-[8px] text-[13px] font-bold text-ink transition-colors hover:border-acc hover:text-acc"
+          >
+            <Reply size={13} /> Follow-up
+          </button>
+          <button
+            type="button"
+            onClick={() => setCustomOpen(true)}
+            className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border-[1.5px] border-line2 bg-card px-4 py-[8px] text-[13px] font-bold text-ink transition-colors hover:border-acc hover:text-acc"
+          >
+            <Pencil size={13} /> Custom message
           </button>
           <button
             type="button"
@@ -314,13 +332,38 @@ export function LeadsView({
         <LeadBoard leads={filtered} onOpen={(l) => setActiveId(l.id)} />
       )}
 
+      <PersonalizedOutreachDialog
+        open={outreachOpen}
+        onOpenChange={setOutreachOpen}
+        leads={selectedLeads}
+        onSent={() => {
+          setOutreachOpen(false);
+          setSelected(new Set());
+        }}
+      />
+
       <BulkEmailDialog
-        open={composeOpen}
-        onOpenChange={setComposeOpen}
+        open={followupOpen}
+        onOpenChange={setFollowupOpen}
+        title="Send a follow-up"
+        defaultTouch="follow_up_1"
         leads={selectedLeads}
         templates={templates}
         onSent={() => {
-          setComposeOpen(false);
+          setFollowupOpen(false);
+          setSelected(new Set());
+        }}
+      />
+
+      <BulkEmailDialog
+        open={customOpen}
+        onOpenChange={setCustomOpen}
+        title="Custom message"
+        defaultTouch="first_touch"
+        leads={selectedLeads}
+        templates={templates}
+        onSent={() => {
+          setCustomOpen(false);
           setSelected(new Set());
         }}
       />
@@ -685,6 +728,23 @@ function LeadDrawer({
           </p>
         )}
       </div>
+
+      {/* Personalized outreach message (imported from the CSV) */}
+      {lead.outreach_message?.trim() && (
+        <div className="border-b border-line px-6 py-4">
+          <div className="mb-2 flex items-center gap-2">
+            <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-mute">
+              Outreach message
+            </span>
+            <span className="rounded-full border border-acc/30 bg-acc/[0.06] px-2 py-[1px] text-[10.5px] font-semibold text-acc-dim">
+              sent via Send outreach
+            </span>
+          </div>
+          <p className="whitespace-pre-wrap rounded-[10px] border border-line bg-panel px-3 py-2 text-[13px] leading-[1.55] text-body">
+            {lead.outreach_message}
+          </p>
+        </div>
+      )}
 
       {/* Funnel */}
       <div className="border-b border-line px-6 py-5">
@@ -1360,15 +1420,195 @@ function firstNameOf(contact: string | null): string {
   return (contact ?? "").trim().split(/\s+/)[0] || "there";
 }
 
+function PersonalizedOutreachDialog({
+  open,
+  onOpenChange,
+  leads,
+  onSent,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  leads: Lead[];
+  onSent: () => void;
+}) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [pending, startTransition] = useTransition();
+  const [subject, setSubject] = useState(
+    "A quick idea for {{business}}'s Google reviews",
+  );
+
+  // outreach_message is undefined until migration 0011 adds the column, so a
+  // lead with no imported message simply lands in "no message".
+  const ready = leads.filter((l) => l.outreach_message?.trim() && l.email?.trim());
+  const noMessage = leads.filter((l) => !l.outreach_message?.trim());
+  const noEmail = leads.filter(
+    (l) => l.outreach_message?.trim() && !l.email?.trim(),
+  );
+  const previewLead = ready[0];
+
+  function send() {
+    if (!subject.trim()) {
+      toast({ variant: "info", title: "Add a subject line." });
+      return;
+    }
+    if (ready.length === 0) {
+      toast({
+        variant: "info",
+        title: "No personalized messages to send",
+        description: "Import a CSV with a message column first.",
+      });
+      return;
+    }
+    startTransition(async () => {
+      const res = await sendPersonalizedOutreach({
+        leadIds: leads.map((l) => l.id),
+        subject,
+      });
+      if (!res.ok) {
+        toast({ variant: "info", title: "Not sent", description: res.error });
+        return;
+      }
+      const { sent, failed, skippedNoEmail, skippedNoMessage } = res.data;
+      toast({
+        title: `Sent to ${sent}`,
+        description:
+          [
+            failed > 0 ? `${failed} failed` : "",
+            skippedNoMessage > 0 ? `${skippedNoMessage} had no message` : "",
+            skippedNoEmail > 0 ? `${skippedNoEmail} had no email` : "",
+          ]
+            .filter(Boolean)
+            .join(", ") || "Each lead got its own message.",
+      });
+      onSent();
+      router.refresh();
+    });
+  }
+
+  const fieldCls =
+    "w-full rounded-[10px] border-[1.5px] border-line2 bg-card2 px-[13px] py-[10px] text-[14px] text-ink placeholder:text-mute";
+
+  return (
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[92vh] w-[calc(100%-1.5rem)] max-w-[560px] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-[18px] border border-line2 bg-card p-6 shadow-card focus:outline-none">
+          <div className="mb-1 flex items-center justify-between">
+            <Dialog.Title className="font-display text-[19px] font-extrabold tracking-[-0.02em] text-ink">
+              Send outreach{" "}
+              <span className="text-[14px] font-bold text-mute">
+                · {leads.length} lead{leads.length === 1 ? "" : "s"}
+              </span>
+            </Dialog.Title>
+            <Dialog.Close className="grid h-8 w-8 place-items-center rounded-full border border-line2 text-mute hover:text-ink">
+              <X size={16} />
+            </Dialog.Close>
+          </div>
+          <p className="mb-4 text-[13px] leading-[1.5] text-body">
+            Each lead gets its own personalized message, the one imported from the
+            CSV. The subject below is shared, with {"{{business}}"} filled per
+            lead. Logged as a first touch.
+          </p>
+
+          <div className="mb-4 flex flex-wrap gap-2 text-[12.5px]">
+            <span className="rounded-full border border-ok/35 bg-ok/[0.08] px-3 py-[4px] font-semibold text-ok">
+              {ready.length} ready to send
+            </span>
+            {noMessage.length > 0 && (
+              <span className="rounded-full border border-line2 bg-panel px-3 py-[4px] font-semibold text-mute">
+                {noMessage.length} no message
+              </span>
+            )}
+            {noEmail.length > 0 && (
+              <span className="rounded-full border border-line2 bg-panel px-3 py-[4px] font-semibold text-mute">
+                {noEmail.length} no email
+              </span>
+            )}
+          </div>
+
+          {ready.length === 0 && (
+            <div className="mb-4 flex items-start gap-2 rounded-[10px] border border-acc/40 bg-acc/[0.06] px-3 py-2 text-[12.5px] leading-[1.5] text-acc-dim">
+              <AlertTriangle size={14} className="mt-[2px] shrink-0" />
+              <span>
+                None of the selected leads have a personalized message yet. Import
+                a CSV with a{" "}
+                <span className="font-semibold">message</span> column, then select
+                those leads. For a one-off note use Custom message instead.
+              </span>
+            </div>
+          )}
+
+          <label className="mb-4 flex flex-col gap-[6px]">
+            <span className="text-[12.5px] font-bold text-ink">Subject</span>
+            <input
+              className={fieldCls}
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+            />
+          </label>
+
+          {previewLead && (
+            <div className="mb-4 rounded-[12px] border border-line bg-panel px-3 py-3">
+              <div className="mb-1 font-mono text-[10.5px] font-semibold uppercase tracking-[0.12em] text-mute">
+                Preview for {previewLead.business_name}
+              </div>
+              <p className="text-[13px] font-bold text-ink">
+                {substituteVars(subject, {
+                  business: previewLead.business_name,
+                  first_name: firstNameOf(previewLead.contact_name),
+                  city: previewLead.city ?? "",
+                })}
+              </p>
+              <p className="mt-1 whitespace-pre-wrap text-[12.5px] leading-[1.55] text-body">
+                {substituteVars(previewLead.outreach_message ?? "", {
+                  business: previewLead.business_name,
+                  first_name: firstNameOf(previewLead.contact_name),
+                  city: previewLead.city ?? "",
+                  sender: "you",
+                  demo_url: "tryringrelay.com/demo",
+                })}
+              </p>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2">
+            <Dialog.Close className="whitespace-nowrap rounded-full border-[1.5px] border-line2 px-5 py-[10px] text-[14px] font-bold text-ink">
+              Cancel
+            </Dialog.Close>
+            <button
+              type="button"
+              onClick={send}
+              disabled={pending || ready.length === 0}
+              className="inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-acc px-5 py-[10px] text-[14px] font-bold text-white hover:bg-acc-b disabled:opacity-60"
+            >
+              {pending ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Send size={14} />
+              )}
+              Send to {ready.length}
+            </button>
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
 function BulkEmailDialog({
   open,
   onOpenChange,
+  title,
+  defaultTouch,
   leads,
   templates,
   onSent,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
+  title: string;
+  defaultTouch: TouchType;
   leads: Lead[];
   templates: OutreachTemplate[];
   onSent: () => void;
@@ -1378,7 +1618,7 @@ function BulkEmailDialog({
   const [pending, startTransition] = useTransition();
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
-  const [touchType, setTouchType] = useState<TouchType>("first_touch");
+  const [touchType, setTouchType] = useState<TouchType>(defaultTouch);
 
   const usable = templates.filter(
     (t) => t.is_active && OUTREACH_CATEGORIES.includes(t.category),
@@ -1456,7 +1696,10 @@ function BulkEmailDialog({
         <Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[92vh] w-[calc(100%-1.5rem)] max-w-[560px] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-[18px] border border-line2 bg-card p-6 shadow-card focus:outline-none">
           <div className="mb-1 flex items-center justify-between">
             <Dialog.Title className="font-display text-[19px] font-extrabold tracking-[-0.02em] text-ink">
-              Email {leads.length} lead{leads.length === 1 ? "" : "s"}
+              {title}{" "}
+              <span className="text-[14px] font-bold text-mute">
+                · {leads.length} lead{leads.length === 1 ? "" : "s"}
+              </span>
             </Dialog.Title>
             <Dialog.Close className="grid h-8 w-8 place-items-center rounded-full border border-line2 text-mute hover:text-ink">
               <X size={16} />

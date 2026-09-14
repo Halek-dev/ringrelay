@@ -204,6 +204,16 @@ const COLUMN_ALIASES: Record<string, string[]> = {
   industry: ["industry", "trade", "category", "type"],
   source: ["source", "lead source", "list"],
   notes: ["notes", "note", "comment", "comments"],
+  message: [
+    "message",
+    "outreach",
+    "outreach message",
+    "personalized message",
+    "personalised message",
+    "pitch",
+    "first touch",
+    "email body",
+  ],
 };
 
 function normEmail(v: string): string {
@@ -265,6 +275,7 @@ export async function importLeads(
     industry: colOf("industry"),
     source: colOf("source"),
     notes: colOf("notes"),
+    message: colOf("message"),
   };
   if (col.business < 0)
     return fail(
@@ -295,7 +306,12 @@ export async function importLeads(
     status: LeadStatus;
     next_action: string;
     owner_id: string;
+    outreach_message?: string | null;
   };
+  // Only touch the outreach_message column when the file actually carries a
+  // message column, so a plain import still works before migration 0011 adds
+  // the column.
+  const hasMessageCol = col.message >= 0;
 
   const toInsert: InsertRow[] = [];
   let skipped = 0;
@@ -345,6 +361,7 @@ export async function importLeads(
       status: "new",
       next_action: "Run qualification funnel",
       owner_id: profile.id,
+      ...(hasMessageCol ? { outreach_message: cell(col.message) || null } : {}),
     });
   }
 
@@ -364,15 +381,16 @@ export async function importLeads(
 
 /* --------------------------- bulk outreach email --------------------------- */
 
-function leadVars(
-  lead: {
-    business_name: string;
-    contact_name: string | null;
-    city: string | null;
-    state: string | null;
-  },
-  sender: string,
-): EmailVars {
+type LeadEmailRow = {
+  id: string;
+  business_name: string;
+  contact_name: string | null;
+  email: string | null;
+  city: string | null;
+  state: string | null;
+};
+
+function leadVars(lead: LeadEmailRow, sender: string): EmailVars {
   const first = (lead.contact_name ?? "").trim().split(/\s+/)[0] || "there";
   return {
     business: lead.business_name ?? "",
@@ -386,13 +404,50 @@ function leadVars(
 }
 
 /**
- * Send the same outreach email to many leads at once via Resend's batch
- * endpoint. Each lead's {{business}}, {{first_name}}, {{city}} and {{sender}}
- * tokens are filled per recipient; tokens we cannot know for a batch (a
- * competitor name, a review count) are left blank, so those openers are meant
- * to be sent one at a time from the lead's own view. Only leads whose email
- * actually sent get a logged touch and move into the pipeline, so a partial
- * failure is safe to retry. Leads with no email address are skipped.
+ * Send a batch of already-built emails, then log a touch on each lead that
+ * actually sent and move the pre-contact ones into the pipeline. Shared by both
+ * the shared-message and personalized outreach actions so their bookkeeping
+ * never drifts apart. Only successful sends are advanced, so a partial failure
+ * is safe to retry.
+ */
+async function dispatchLeadEmails(
+  supabase: ReturnType<typeof createClient>,
+  profileId: string,
+  items: { ref: string; to: string; subject: string; bodyText: string }[],
+  touchType: TouchType,
+): Promise<{ sent: number; failed: number }> {
+  const { successRefs, failedRefs } = await sendEmailBatch(items);
+
+  if (successRefs.length > 0) {
+    const now = new Date().toISOString();
+    await supabase.from("outreach_log").insert(
+      successRefs.map((id) => ({
+        lead_id: id,
+        profile_id: profileId,
+        touch_type: touchType,
+        channel: "email" as const,
+      })),
+    );
+    await supabase
+      .from("leads")
+      .update({ status: "contacted", last_touch_at: now })
+      .in("id", successRefs)
+      .in("status", ["new", "in_progress", "qualified"]);
+    await supabase
+      .from("leads")
+      .update({ last_touch_at: now })
+      .in("id", successRefs);
+  }
+
+  return { sent: successRefs.length, failed: failedRefs.length };
+}
+
+/**
+ * Send ONE shared message to many leads at once (used for follow-ups and custom
+ * one-off sends). Each lead's {{business}}, {{first_name}}, {{city}} and
+ * {{sender}} tokens are filled per recipient; tokens we cannot know for a batch
+ * (a competitor name, a review count) are left blank, so those openers are meant
+ * to be sent one at a time. Leads with no email address are skipped.
  */
 export async function sendBulkLeadEmail(input: {
   leadIds: string[];
@@ -408,61 +463,114 @@ export async function sendBulkLeadEmail(input: {
   const supabase = createClient();
   const { data: leads, error } = await supabase
     .from("leads")
-    .select("id, business_name, contact_name, email, city, state, status")
+    .select("id, business_name, contact_name, email, city, state")
     .in("id", input.leadIds);
   if (error) return fail(error.message);
   if (!leads || leads.length === 0) return fail("No leads found.");
 
-  const withEmail = leads.filter((l) => (l.email as string | null)?.trim());
+  const withEmail = (leads as LeadEmailRow[]).filter((l) => l.email?.trim());
   const skipped = leads.length - withEmail.length;
   if (withEmail.length === 0)
     return fail("None of the selected leads have an email address.");
 
   const sender = profile.full_name?.trim() || "the Ring Relay team";
   const items = withEmail.map((l) => {
-    const vars = leadVars(
-      {
-        business_name: l.business_name as string,
-        contact_name: l.contact_name as string | null,
-        city: l.city as string | null,
-        state: l.state as string | null,
-      },
-      sender,
-    );
+    const vars = leadVars(l, sender);
     return {
-      ref: l.id as string,
+      ref: l.id,
       to: l.email as string,
       subject: substituteVars(input.subject, vars),
       bodyText: substituteVars(input.body, vars),
     };
   });
 
-  const { successRefs, failedRefs } = await sendEmailBatch(items);
-
-  if (successRefs.length > 0) {
-    const now = new Date().toISOString();
-    await supabase.from("outreach_log").insert(
-      successRefs.map((id) => ({
-        lead_id: id,
-        profile_id: profile.id,
-        touch_type: input.touchType,
-        channel: "email" as const,
-      })),
-    );
-    // Leads still in the pre-contact stages move into the pipeline; the rest
-    // just get their last-touch stamp refreshed.
-    await supabase
-      .from("leads")
-      .update({ status: "contacted", last_touch_at: now })
-      .in("id", successRefs)
-      .in("status", ["new", "in_progress", "qualified"]);
-    await supabase
-      .from("leads")
-      .update({ last_touch_at: now })
-      .in("id", successRefs);
-  }
+  const { sent, failed } = await dispatchLeadEmails(
+    supabase,
+    profile.id,
+    items,
+    input.touchType,
+  );
 
   revalidatePath("/admin/leads");
   revalidatePath("/admin");
-  return ok({ sent: successRefs.length, failed: failedRefs.length, skipped });
+  return ok({ sent, failed, skipped });
+}
+
+/**
+ * The one-click outreach send: each lead gets its OWN personalized message,
+ * the one imported from the CSV "message" column and stored on the lead. A
+ * shared subject line is filled per lead. Leads with no message, or no email,
+ * are reported back rather than sent, so nothing goes out half-blank. Logged as
+ * a first touch.
+ */
+export async function sendPersonalizedOutreach(input: {
+  leadIds: string[];
+  subject: string;
+}): Promise<
+  ActionResult<{
+    sent: number;
+    failed: number;
+    skippedNoEmail: number;
+    skippedNoMessage: number;
+  }>
+> {
+  const profile = await assertProfile();
+  if (input.leadIds.length === 0) return fail("No leads selected.");
+  if (!input.subject.trim()) return fail("Add a subject line.");
+
+  const supabase = createClient();
+  const { data: leads, error } = await supabase
+    .from("leads")
+    .select(
+      "id, business_name, contact_name, email, city, state, outreach_message",
+    )
+    .in("id", input.leadIds);
+  if (error) {
+    if (error.code === "42703")
+      return fail(
+        "Personalized outreach needs migration 0011 (the outreach_message column). Run it, then try again.",
+      );
+    return fail(error.message);
+  }
+  if (!leads || leads.length === 0) return fail("No leads found.");
+
+  const sender = profile.full_name?.trim() || "the Ring Relay team";
+  let skippedNoEmail = 0;
+  let skippedNoMessage = 0;
+  const items: { ref: string; to: string; subject: string; bodyText: string }[] = [];
+
+  for (const l of leads as (LeadEmailRow & { outreach_message: string | null })[]) {
+    const message = l.outreach_message?.trim();
+    if (!l.email?.trim()) {
+      skippedNoEmail++;
+      continue;
+    }
+    if (!message) {
+      skippedNoMessage++;
+      continue;
+    }
+    const vars = leadVars(l, sender);
+    items.push({
+      ref: l.id,
+      to: l.email,
+      subject: substituteVars(input.subject, vars),
+      bodyText: substituteVars(message, vars),
+    });
+  }
+
+  if (items.length === 0)
+    return fail(
+      "Nothing to send: the selected leads have no personalized message, or no email.",
+    );
+
+  const { sent, failed } = await dispatchLeadEmails(
+    supabase,
+    profile.id,
+    items,
+    "first_touch",
+  );
+
+  revalidatePath("/admin/leads");
+  revalidatePath("/admin");
+  return ok({ sent, failed, skippedNoEmail, skippedNoMessage });
 }

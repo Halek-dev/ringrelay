@@ -197,6 +197,7 @@ export type Lead = {
   owner_id: string | null;
   score: number | null;
   tier: LeadTier | null;
+  outreach_message: string | null;
   qualification: QualificationAnswers;
   killed_at_step: number | null;
   kill_reason: string | null;
