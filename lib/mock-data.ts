@@ -174,20 +174,28 @@ export const PLAN = {
   name: "Ring Relay",
   price: "$97",
   cadence: "/month",
-  blurb: "One plan. Everything included. Cancel anytime.",
+  annual: "or $997 a year",
+  annualNote: "two months free",
+  term: "A 3-month start, then month to month.",
+  blurb: "One plan. Everything done for you.",
   valueLine: "One recovered job pays for years.",
   cta: "Book a demo",
   features: [
     "Automatic review requests by text and email",
-    "Smart timing and a built-in follow-up",
-    "One-tap Google review link for your customers",
-    "Works with your software, or none at all",
-    "Live dashboard: requests sent and reviews landed",
-    "Setup done with you, at no extra cost",
+    "Smart timing with a built-in follow-up",
+    "A one-tap Google review link for your customers",
+    "We draft your replies to new Google reviews",
+    "A one-time email to your past customers to start the flow",
+    "Works with Jobber, Housecall Pro, and QuickBooks, or no software at all",
+    "Carrier registration and setup handled for you",
+    "A monthly report on requests sent and reviews landed",
   ],
-  // Founding-customer offer while we launch (no proof yet).
+  // Real founding offer: free setup for the first 10 businesses.
   foundingOffer:
-    "Founding customers get their first two months at half price in exchange for a short testimonial once the reviews start landing. Limited spots while we launch.",
+    "Setup is free for our first ten businesses, normally a one-time $197. Limited spots while we launch.",
+  // Conditional 60-day guarantee, target agreed on the call.
+  guarantee:
+    "60-day guarantee. If your Google reviews don't reach the target we set together within 60 days, we refund your setup, or your first month.",
 } as const;
 
 export type Faq = { q: string; a: string };
@@ -195,16 +203,20 @@ export type Faq = { q: string; a: string };
 export const HOME_FAQS: Faq[] = [
   { q: "Does Google allow this?", a: "Yes. You are asking your own customers for honest reviews, which Google encourages. We never fake, buy, or filter reviews." },
   { q: "Do I have to do anything?", a: "No. It runs automatically after each job. You approve the wording once and it takes over from there." },
-  { q: "Will it work with my software?", a: "Yes, with the common trade tools like Jobber, Housecall Pro, and ServiceTitan, and just as well with no software at all." },
+  { q: "Will it annoy my customers?", a: "No. We only text customers who gave you their number for the job, one request and at most one reminder, never before 8am or after 9pm their time, and every message has a one-tap way to opt out." },
+  { q: "Will it work with my software?", a: "Yes, with the common trade tools like Jobber, Housecall Pro, and QuickBooks, and just as well with no software at all." },
   { q: "How soon will I see reviews?", a: "Requests start going out within days of going live. Your ranking improves over the following weeks as reviews add up. We do not promise a specific number." },
-  { q: "How much is it?", a: "Ninety-seven dollars a month, month to month. One recovered job pays for years." },
+  { q: "How much is it?", a: "Ninety-seven dollars a month, or $997 a year (two months free). Setup is free while we onboard our founding customers. One recovered job pays for years." },
 ];
 
 export const PRICING_FAQS: Faq[] = [
-  { q: "Is there a contract?", a: "No. Month to month, cancel anytime." },
-  { q: "Is there a setup fee?", a: "No. We help you get live at no extra cost." },
-  { q: "Does the price change with volume?", a: "No. It is flat no matter how many review requests go out." },
-  { q: "What if I use no software?", a: "Still ninety-seven dollars. You add customers in one tap or forward a text." },
+  { q: "Is there a contract?", a: "We ask for a 3-month start so the reviews have time to build, then it is month to month. Cancel anytime after that." },
+  { q: "Is there a setup fee?", a: "It is free for our first ten founding businesses, normally a one-time $197. We handle carrier registration and get you live." },
+  { q: "Can I pay yearly?", a: "Yes. $997 a year works out to two months free." },
+  { q: "What if it doesn't work?", a: "If your Google reviews don't reach the target we set together within 60 days, we refund your setup, or your first month. We set that target with you from your job volume." },
+  { q: "Does the price change with volume?", a: "No. It is flat for normal job volume, and emails are unlimited." },
+  { q: "How long until it is live?", a: "Emails go out within a few days. Texts start once your carrier registration clears, usually one to two weeks in the US." },
+  { q: "What if I use no software?", a: "Still ninety-seven dollars. You add customers in one tap, upload a CSV, or forward a text." },
 ];
 
 export type OnboardingStep = {

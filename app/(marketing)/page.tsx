@@ -230,11 +230,11 @@ export default function HomePage() {
         <Reveal className="mb-12 text-center">
           <Eyebrow>Simple pricing</Eyebrow>
           <h2 className="mx-auto mt-4 max-w-[620px] text-balance font-display text-[34px] font-extrabold tracking-[-0.03em] text-ink">
-            One plan. One price. Cancel anytime.
+            One plan. One price. Everything done for you.
           </h2>
           <p className="mx-auto mt-4 max-w-[520px] text-[17px] leading-[1.6] text-body">
-            No setup fee, no contract, no per-message charges. One recovered job
-            pays for years.
+            Free setup while we onboard our founding customers, and a 60-day
+            guarantee. One recovered job pays for years.
           </p>
         </Reveal>
 
@@ -251,7 +251,11 @@ export default function HomePage() {
                 {PLAN.cadence}
               </span>
             </div>
-            <div className="mt-2 font-mono text-[12px] font-semibold tracking-[0.06em] text-white/60">
+            <div className="mt-2 text-[13.5px] text-white/70">
+              {PLAN.annual}{" "}
+              <span className="text-white/45">· {PLAN.annualNote}</span>
+            </div>
+            <div className="mt-1 font-mono text-[12px] font-semibold tracking-[0.06em] text-white/60">
               {PLAN.valueLine}
             </div>
             <ul className="mt-6 flex flex-1 flex-col gap-3">

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Check } from "lucide-react";
+import { Check, ShieldCheck } from "lucide-react";
 import { Eyebrow } from "@/components/site/section";
 import { Reveal } from "@/components/site/reveal";
 import { FaqAccordion } from "@/components/site/faq-accordion";
@@ -10,7 +10,7 @@ import { PLAN, PRICING_FAQS } from "@/lib/mock-data";
 export const metadata: Metadata = {
   title: "Pricing",
   description:
-    "One simple plan at $97 a month. Everything included, no setup fee, no contract. Automatic Google reviews for HVAC and roofing pros.",
+    "One simple plan at $97 a month, or $997 a year. Everything done for you, free setup for founding customers, backed by a 60-day guarantee. Automatic Google reviews for HVAC and roofing pros.",
 };
 
 export default function PricingPage() {
@@ -25,8 +25,9 @@ export default function PricingPage() {
           <span className="headline-em">One plan.</span>
         </h1>
         <p className="fade-3 mx-auto mt-[22px] max-w-[560px] text-pretty text-[19px] leading-[1.65] text-body">
-          No setup fee, no contract, no per-message charges. One recovered job
-          pays for years.
+          Everything done for you, no per-message charges. Free setup while we
+          onboard our founding customers, and a 60-day guarantee. One recovered
+          job pays for years.
         </p>
       </section>
 
@@ -48,6 +49,11 @@ export default function PricingPage() {
                 {PLAN.cadence}
               </span>
             </div>
+            <div className="mt-2 text-[14px] text-white/75">
+              {PLAN.annual}{" "}
+              <span className="text-white/50">· {PLAN.annualNote}</span>
+            </div>
+            <div className="mt-1 text-[13.5px] text-white/55">{PLAN.term}</div>
             <div className="mt-3 font-mono text-[12px] font-semibold tracking-[0.06em] text-white/60">
               {PLAN.valueLine}
             </div>
@@ -68,6 +74,12 @@ export default function PricingPage() {
             >
               {PLAN.cta}
             </Link>
+            <div className="mt-5 flex items-start gap-[9px] border-t border-white/[0.12] pt-5">
+              <ShieldCheck size={16} strokeWidth={2.4} className="mt-[2px] shrink-0 text-acc" />
+              <span className="text-[13px] leading-[1.55] text-white/70">
+                {PLAN.guarantee}
+              </span>
+            </div>
           </div>
         </Reveal>
 

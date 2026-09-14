@@ -36,10 +36,10 @@ export default function TermsPage() {
       <LegalSection title="3. Fees">
         <LegalList
           items={[
-            "A flat monthly fee, as published on the pricing page or agreed in writing. No setup fee and no per-message charges.",
-            "Month to month, no minimum term. You may cancel anytime with effect from the next billing cycle, no cancellation fee.",
+            "A flat monthly fee, or an annual fee, as published on the pricing page or agreed in writing. A one-time setup fee may apply, and is waived for founding customers. No per-message charges.",
+            "An initial minimum term of three months, then month to month. You may cancel anytime after the minimum term, with effect from the next billing cycle, and no cancellation fee.",
             "Fees are invoiced in advance and payable within 14 days. We may suspend the service for accounts more than 14 days overdue, after notice.",
-            "Any founding-customer or promotional pricing applies only for the period stated when you sign up.",
+            "Any founding-customer or promotional pricing, and any refund under a published guarantee, applies only on the terms stated when you sign up.",
           ]}
         />
       </LegalSection>
