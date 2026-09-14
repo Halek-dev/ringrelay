@@ -2,12 +2,12 @@ import type { Metadata } from "next";
 import { Eyebrow } from "@/components/site/section";
 import { Timeline } from "@/components/site/timeline";
 import { CtaBand } from "@/components/site/cta-band";
-import { CALL_LIFECYCLE } from "@/lib/mock-data";
+import { REVIEW_FLOW } from "@/lib/mock-data";
 
 export const metadata: Metadata = {
   title: "How It Works",
   description:
-    "One call, start to finish. Exactly what happens when a customer calls your number and you're on a job.",
+    "From a finished job to a fresh 5-star review, on its own. Exactly what Ring Relay does after every visit.",
 };
 
 export default function HowItWorksPage() {
@@ -18,22 +18,27 @@ export default function HowItWorksPage() {
           <Eyebrow>01 · How it works</Eyebrow>
         </div>
         <h1 className="fade-2 mt-[26px] text-balance font-display text-[42px] font-extrabold leading-[1.02] tracking-[-0.035em] text-ink sm:text-[58px]">
-          One call, start to finish.{" "}
-          <span className="headline-em">No jargon.</span>
+          More reviews, more calls,{" "}
+          <span className="headline-em">without lifting a finger.</span>
         </h1>
         <p className="fade-3 mx-auto mt-[22px] max-w-[560px] text-pretty text-[19px] leading-[1.65] text-body">
-          Here&apos;s exactly what happens when a customer calls your number and
-          you&apos;re elbow-deep in a job.
+          Getting reviews by hand means remembering to ask, chasing people, and
+          copying links. Ring Relay does all of it automatically after every
+          job.
         </p>
       </section>
 
       <section className="relative mx-auto max-w-[880px] px-6 pb-20 md:px-10">
-        <Timeline items={CALL_LIFECYCLE} />
+        <Timeline items={REVIEW_FLOW} />
+        <p className="mx-auto mt-10 max-w-[560px] text-center text-[15.5px] leading-[1.65] text-body">
+          You approve how the messages sound before a single one goes out. Then
+          it runs on its own.
+        </p>
       </section>
 
       <CtaBand
-        title="Hear it answer a real call."
-        subtitle="Fifteen minutes. We'll call your line live on the demo."
+        title="See it work for your shop."
+        subtitle="Book a short demo and we will show you your review gap against the top shop in your area."
       />
     </>
   );

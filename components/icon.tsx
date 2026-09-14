@@ -25,6 +25,9 @@ import {
   BookOpen,
   Briefcase,
   MailPlus,
+  Zap,
+  TrendingUp,
+  Home,
   type LucideIcon,
 } from "lucide-react";
 
@@ -55,6 +58,9 @@ const MAP: Record<string, LucideIcon> = {
   BookOpen,
   Briefcase,
   MailPlus,
+  Zap,
+  TrendingUp,
+  Home,
 };
 
 /** Render a lucide icon by the string name stored in mock-data. */

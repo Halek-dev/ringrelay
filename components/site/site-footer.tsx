@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Mic } from "lucide-react";
 import { Logo } from "@/components/site/logo";
 import { AGENCY, NAV_LINKS } from "@/lib/mock-data";
 import { CookiePreferencesLink } from "@/components/consent/consent-provider";
@@ -26,11 +25,10 @@ export function SiteFooter() {
               {AGENCY.tagline}
             </p>
             <Link
-              href="/demo"
+              href="/contact"
               className="mt-4 inline-flex items-center gap-2 text-[14.5px] font-bold text-acc-dim hover:text-acc"
             >
-              <Mic size={15} strokeWidth={2.2} className="text-acc" />
-              Try the live demo
+              Book a demo
             </Link>
           </div>
 
@@ -40,14 +38,6 @@ export function SiteFooter() {
                 Product
               </div>
               <ul className="flex flex-col gap-3">
-                <li>
-                  <Link
-                    href="/demo"
-                    className="text-[15px] font-semibold text-acc-dim hover:text-acc"
-                  >
-                    Try the Demo
-                  </Link>
-                </li>
                 {NAV_LINKS.filter((l) => l.href !== "/careers").map((l) => (
                   <li key={l.href}>
                     <Link
@@ -111,10 +101,10 @@ export function SiteFooter() {
 
         <div className="mt-12 flex flex-col justify-between gap-3 border-t border-line pt-6 text-[13px] text-mute md:flex-row">
           <span>
-            © {new Date().getFullYear()} {AGENCY.name}. Built for HVAC, Plumbing
-            &amp; Restoration.
+            © {new Date().getFullYear()} {AGENCY.name}. Built for HVAC and
+            roofing pros.
           </span>
-          <span>Serving trades across the US &amp; Canada.</span>
+          <span>More reviews. More calls. On autopilot.</span>
         </div>
       </div>
     </footer>

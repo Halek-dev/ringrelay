@@ -14,10 +14,10 @@ export function JsonLd({ faqs }: { faqs: Faq[] }) {
       "@type": "ProfessionalService",
       name: AGENCY.name,
       description:
-        "AI voice receptionist that answers calls 24/7, books appointments, and texts summaries for HVAC, plumbing, and water-damage restoration businesses.",
+        "Automated Google review request system for home-services pros. Ring Relay asks every customer for a review after the job, so HVAC and roofing businesses rank higher on Google Maps and get more calls.",
       url: SITE_URL,
       email: AGENCY.email,
-      areaServed: ["US", "CA"],
+      areaServed: ["US"],
       slogan: AGENCY.tagline,
     },
     {

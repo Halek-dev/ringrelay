@@ -1,18 +1,16 @@
 /**
- * Ring Relay — mock data (frontend-only phase).
+ * Ring Relay content constants.
  *
- * Everything the UI renders lives here as typed constants so the whole site
- * can be reviewed before any backend exists. In phase 2 these are replaced by
- * Supabase queries (contact submissions, leads, clients, daily-plan state).
- * Swap the AGENCY constant to rebrand.
+ * Ring Relay is an automated Google-review request system for home-services
+ * pros (HVAC and roofing first). It asks every customer for a review after the
+ * job, so the business climbs the Google Maps rankings and gets more calls.
+ * All public marketing copy lives here so it can be edited in one place.
  */
 
 export const AGENCY = {
   name: "Ring Relay",
   wordmark: { black: "Ring", accent: "Relay" },
-  tagline: "We relay the call. You keep the lead.",
-  // The demo is a browser experience, not a phone line. Point everything here.
-  demoPath: "/demo",
+  tagline: "More reviews. More calls. On autopilot.",
   email: "hello@ringrelay.com",
 } as const;
 
@@ -28,30 +26,32 @@ export const NAV_LINKS = [
 ] as const;
 
 export const HERO = {
-  eyebrow: "Answering live · 24/7 · EN + ES",
-  headlinePre: "Every missed call is a job",
-  headlineEm: "your competitor booked.",
-  sub: "Every missed call is lost revenue. Ring Relay answers around the clock, qualifies the caller, books the job, and texts you the details while you're still on the jobsite.",
-  builtFor: ["HVAC", "Plumbing", "Restoration"],
+  eyebrow: "For HVAC and roofing pros",
+  headlinePre: "More 5-star reviews. More calls.",
+  headlineEm: "Zero effort.",
+  sub: "Ring Relay asks every customer for a Google review right after the job, so you climb the Maps rankings and get more calls from the ads you already pay for. You do nothing.",
+  builtFor: ["HVAC", "Roofing", "More trades"],
 };
 
-// Live-call card shown in the hero
-export const LIVE_CALL = {
-  fromNumber: "(415) 555-0182",
-  when: "Sat 7:42 PM · after hours",
-  duration: "01:24",
-  transcript: [
-    { role: "caller", text: "My water heater's leaking all over the garage. Can someone come out?" },
-    { role: "ai", text: "I can help with that. We have tomorrow at 8:00 AM open. Does that work for you?" },
-    { role: "caller", text: "Yeah, 8 works. Sooner the better." },
-  ] as { role: "caller" | "ai"; text: string }[],
-  summary: {
-    textedAt: "7:44 PM",
-    status: "BOOKED",
-    job: "Water heater leak",
-    when: "Tomorrow · 8:00 AM",
-    customer: "Mike R.",
-    address: "412 Cedar Ln",
+/**
+ * Data for the hero card: a review request going out and a Google profile
+ * climbing. Illustrative, not a real business.
+ */
+export const REVIEW_HERO = {
+  business: "Summit Heating & Air",
+  when: "Sat 4:12 PM · job finished",
+  request: {
+    channel: "Text to customer",
+    body: "Hi Mike, thanks for choosing Summit Heating & Air today. Would you mind leaving us a quick Google review? It takes 10 seconds: {link}",
+  },
+  result: {
+    stars: 5,
+    quote: "Fast, tidy, explained everything. Highly recommend.",
+    author: "Mike R.",
+  },
+  ranking: {
+    before: { rank: "#7", reviews: 22 },
+    after: { rank: "#2", reviews: 41 },
   },
 };
 
@@ -63,19 +63,22 @@ export type ProblemStat = {
 
 export const PROBLEM_STATS: ProblemStat[] = [
   {
-    value: "27%",
-    label: "of calls to trades go unanswered",
-    detail: "Crews are on jobsites, not by the phone. Every ring that rolls to voicemail is a lead handed to the next name on the list.",
+    value: "3",
+    label: "businesses win the Google map pack",
+    detail:
+      "Homeowners call one of the three shops at the top of the map. Review count and freshness decide which three. Few or stale reviews and you are not one of them.",
   },
   {
-    value: "$390",
-    label: "average value of a booked service call",
-    detail: "For HVAC, plumbing, and restoration the first job is only the start. Miss it and you miss the repeat business behind it.",
+    value: "0",
+    label: "extra work once it is set up",
+    detail:
+      "Every review request goes out on its own after the job. You never have to remember to ask, chase anyone, or copy a link again.",
   },
   {
-    value: "62%",
-    label: "of missed calls happen after hours",
-    detail: "Emergencies don't wait for 9 to 5. A burst pipe at 11 PM goes to whoever picks up first.",
+    value: "$97",
+    label: "flat per month",
+    detail:
+      "One recovered install or roof pays for years of Ring Relay, and it keeps working while you are on the truck.",
   },
 ];
 
@@ -91,78 +94,66 @@ export type HowStep = {
 export const HOME_STEPS: HowStep[] = [
   {
     num: "01",
-    title: "Call comes in",
-    desc: "A customer calls your existing number, any time of day, night, or weekend. Ring Relay picks up before the third ring, every time.",
+    title: "Finish the job",
+    desc: "Connect the software you already use, or add the customer in one tap. Ring Relay knows the visit is done.",
   },
   {
     num: "02",
-    title: "AI answers, qualifies & books",
-    desc: "A natural voice greets them in your company name, asks the right questions, filters spam, and books straight into your calendar.",
+    title: "We ask for the review",
+    desc: "A friendly text and email go out at the right moment, with a reminder, because most reviews come from the nudge.",
   },
   {
     num: "03",
-    title: "You get a text + calendar entry",
-    desc: "The job lands on your schedule and a summary text hits your phone: who, what, when, and where. Read it between jobs.",
+    title: "You climb the rankings",
+    desc: "Fresh 5-star reviews push you up the Google Maps pack, and more homeowners call the number at the top.",
   },
 ];
 
-// Full call lifecycle (How It Works page)
-export const CALL_LIFECYCLE: HowStep[] = [
+// Full walkthrough (How It Works page)
+export const REVIEW_FLOW: HowStep[] = [
   {
     num: "01",
-    title: "Your phone rings",
-    desc: "A customer calls your existing number at 7 PM on a Saturday. You are under a house. The AI picks up before the third ring, every time.",
+    title: "It knows when a job is done",
+    desc: "Connect Jobber, Housecall Pro, ServiceTitan, or your tool, and Ring Relay triggers off completed jobs. No software? Add a customer in one tap or forward a text.",
+    artifactLabel: "The trigger",
+    artifact: "Job marked complete: Mike R. · Water heater install · 412 Cedar Ln",
   },
   {
     num: "02",
-    title: "It answers in your company name",
-    desc: "A natural voice, not a robot menu. Callers talk to it like they would to your office manager.",
-    artifactLabel: "The greeting",
-    artifact: "“Thanks for calling Summit Plumbing, this is the after-hours line. What can we help you with tonight?”",
+    title: "It asks the right way, at the right time",
+    desc: "A short, human text and email go out shortly after the visit, then one reminder. Friendly, on your brand, and easy to reply to.",
+    artifactLabel: "Text to customer",
+    artifact: "“Thanks for choosing Summit Heating & Air today, Mike. Mind leaving us a quick Google review? Takes 10 seconds.”",
   },
   {
     num: "03",
-    title: "It asks the right questions",
-    desc: "What is the problem, where are you, how urgent is it. Robocalls and spam get filtered out before they ever reach you.",
-    artifactLabel: "Qualifying",
-    artifact: "“Is the water shut off, or is it still leaking? Okay, and what is the address?”",
+    title: "Your customer leaves the review in seconds",
+    desc: "One tap takes them straight to your Google review page. No apps, no logins, no friction.",
+    artifactLabel: "The review",
+    artifact: "★★★★★ “Fast, tidy, explained everything. Highly recommend.” - Mike R.",
   },
   {
     num: "04",
-    title: "It books the job into your calendar",
-    desc: "It sees your real availability and offers actual open slots. True emergencies get flagged for immediate callback instead.",
-    artifactLabel: "Booking",
-    artifact: "Tomorrow 8:00 AM slot confirmed on your Jobber calendar.",
-  },
-  {
-    num: "05",
-    title: "The caller gets a confirmation text",
-    desc: "Time, your company name, and what to expect. They know they are on the schedule, so they stop calling your competitors.",
-    artifactLabel: "Text to caller",
-    artifact: "“You are booked with Summit Plumbing for tomorrow at 8:00 AM. Reply here if anything changes.”",
-  },
-  {
-    num: "06",
-    title: "You get the full summary",
-    desc: "One text with everything: job type, name, address, urgency, and a link to the call recording. Read it in ten seconds between jobs.",
-    artifactLabel: "Text to you",
-    artifact: "New job booked: Water heater leak · Mike R. · Tomorrow 8:00 AM · 412 Cedar Ln · Recording attached.",
+    title: "You climb the map and the calls follow",
+    desc: "More fresh 5-star reviews lift you in the Google Maps pack and Local Services, so more of the homeowners searching right now call you.",
+    artifactLabel: "The ranking",
+    artifact: "Summit Heating & Air moved from #7 to #2 in the local map pack.",
   },
 ];
 
 export type Feature = {
-  icon: string; // lucide icon name
+  icon: string; // lucide icon name (see components/icon.tsx)
   title: string;
   desc: string;
 };
 
 export const FEATURES: Feature[] = [
-  { icon: "Clock", title: "24/7 answering", desc: "Every call picked up before the third ring, day and night, weekends and holidays, even while you're mid-job." },
-  { icon: "CalendarCheck", title: "Appointment booking", desc: "Reads your real availability and books actual open slots straight into your calendar." },
-  { icon: "MessageSquareText", title: "Call summaries texted to you", desc: "Job type, name, address, urgency, and a recording link, all in one text you can read in ten seconds." },
-  { icon: "ShieldCheck", title: "Spam & robocall filtering", desc: "Junk calls get filtered out before they ever reach you, so you only deal with real customers." },
-  { icon: "Languages", title: "Bilingual EN / ES", desc: "Answers callers in English or Spanish automatically, so you never lose a job over a language barrier." },
-  { icon: "RefreshCw", title: "CRM sync", desc: "Pushes booked jobs into Jobber, ServiceTitan, or Housecall Pro so your office stays in one place." },
+  { icon: "Zap", title: "Automatic after every job", desc: "Set it once. Review requests go out on their own, so you never have to remember to ask." },
+  { icon: "MessageSquareText", title: "Text and email", desc: "Requests land when people actually check their phone, not buried somewhere they get ignored." },
+  { icon: "Star", title: "One tap for your customer", desc: "Straight to your Google review page. They leave a review in seconds, no apps or logins." },
+  { icon: "Wrench", title: "Works with your tools", desc: "Jobber, Housecall Pro, ServiceTitan, AccuLynx, JobNimbus, Roofr, QuickBooks. No software works too." },
+  { icon: "Clock", title: "Follow-up built in", desc: "A gentle reminder catches the reviews the first message misses, without nagging anyone." },
+  { icon: "TrendingUp", title: "See it working", desc: "A simple dashboard shows requests sent and reviews landed, so you know it is earning its keep." },
 ];
 
 export type Industry = {
@@ -172,114 +163,48 @@ export type Industry = {
 };
 
 export const INDUSTRIES: Industry[] = [
-  { icon: "Wind", name: "HVAC", hook: "No-heat and no-cool calls come in bunches. Book them before the next contractor picks up." },
-  { icon: "Wrench", name: "Plumbing", hook: "Burst pipes don't wait for business hours. Answer the 2 AM emergency and win the job." },
-  { icon: "Droplets", name: "Water Damage Restoration", hook: "The first company to answer wins the claim. Be first, every time, without adding staff." },
+  { icon: "Wind", name: "HVAC", hook: "No-heat and no-cool season is when homeowners search hardest. Show up at the top of the map with fresh reviews and win the calls." },
+  { icon: "Home", name: "Roofing", hook: "After a storm, everyone is comparing roofers online. The one with recent 5-star reviews gets the inspection, and the job." },
+  { icon: "Wrench", name: "Every trade", hook: "Plumbing, electrical, garage doors, pest control, landscaping. If your customers can leave a Google review, Ring Relay gets them to." },
 ];
 
-export type PricingTier = {
-  id: string;
-  name: string;
-  blurb: string;
-  monthly: string;
-  setup: string;
-  popular: boolean;
-  cta: string;
-  valueLine: string;
-  features: string[];
-};
+/* --- Pricing: one simple plan --- */
 
-export const PRICING_TIERS: PricingTier[] = [
-  {
-    id: "starter",
-    name: "Starter",
-    blurb: "One truck, one line. Stop missing after-hours calls.",
-    monthly: "$299",
-    setup: "$499",
-    popular: false,
-    cta: "Start with Starter",
-    valueLine: "One recovered $8,000 job pays for 26 months.",
-    features: [
-      "24/7 call answering",
-      "Appointment booking",
-      "Call summaries texted to you",
-      "Spam and robocall filtering",
-      "Emergency call escalation",
-    ],
-  },
-  {
-    id: "pro",
-    name: "Pro",
-    blurb: "For established shops that live and die by the schedule.",
-    monthly: "$499",
-    setup: "$499",
-    popular: true,
-    cta: "Book a Demo",
-    valueLine: "One recovered $8,000 job pays for 16 months.",
-    features: [
-      "Everything in Starter",
-      "Bilingual English + Spanish",
-      "CRM sync: Jobber, ServiceTitan, Housecall Pro",
-      "Priority support",
-    ],
-  },
-  {
-    id: "multi",
-    name: "Multi-location",
-    blurb: "Multiple crews, numbers, or markets under one roof.",
-    monthly: "$899",
-    setup: "$499",
-    popular: false,
-    cta: "Talk to Us",
-    valueLine: "One recovered $8,000 job pays for 9 months.",
-    features: [
-      "Everything in Pro",
-      "Multiple numbers and locations",
-      "Custom call flows per location",
-      "Dedicated account manager",
-    ],
-  },
-];
-
-export type CompareRow = {
-  label: string;
-  starter: string;
-  pro: string;
-  multi: string;
-};
-
-export const COMPARE_ROWS: CompareRow[] = [
-  { label: "24/7 answering & booking", starter: "✓", pro: "✓", multi: "✓" },
-  { label: "Call summaries by text", starter: "✓", pro: "✓", multi: "✓" },
-  { label: "Spam filtering", starter: "✓", pro: "✓", multi: "✓" },
-  { label: "Emergency escalation", starter: "✓", pro: "✓", multi: "✓" },
-  { label: "Bilingual EN / ES", starter: "No", pro: "✓", multi: "✓" },
-  { label: "CRM sync", starter: "No", pro: "✓", multi: "✓" },
-  { label: "Priority support", starter: "No", pro: "✓", multi: "✓" },
-  { label: "Numbers / locations", starter: "1", pro: "1", multi: "Up to 10" },
-  { label: "Dedicated account manager", starter: "No", pro: "No", multi: "✓" },
-];
+export const PLAN = {
+  name: "Ring Relay",
+  price: "$97",
+  cadence: "/month",
+  blurb: "One plan. Everything included. Cancel anytime.",
+  valueLine: "One recovered job pays for years.",
+  cta: "Book a demo",
+  features: [
+    "Automatic review requests by text and email",
+    "Smart timing and a built-in follow-up",
+    "One-tap Google review link for your customers",
+    "Works with your software, or none at all",
+    "Live dashboard: requests sent and reviews landed",
+    "Setup done with you, at no extra cost",
+  ],
+  // Founding-customer offer while we launch (no proof yet).
+  foundingOffer:
+    "Founding customers get their first two months at half price in exchange for a short testimonial once the reviews start landing. Limited spots while we launch.",
+} as const;
 
 export type Faq = { q: string; a: string };
 
 export const HOME_FAQS: Faq[] = [
-  { q: "Does it sound robotic?", a: "No. It uses a natural voice and talks the way your office manager would. Most callers never realize they're speaking with an AI, and you pick the voice during setup." },
-  { q: "What happens to spam calls?", a: "Robocalls and spam are filtered out before they ever reach you. Only real customers make it through." },
-  { q: "Can it book into my existing calendar?", a: "Yes. It connects to Google Calendar, Jobber, ServiceTitan, or Housecall Pro, reads your real availability, and books only actual open slots." },
-  { q: "How long is setup?", a: "Typically about five business days from kickoff to answering live. We do the heavy lifting; you spend roughly 90 minutes total across the week." },
-  { q: "What if it can't answer something?", a: "It never guesses. If a question is outside what it knows, it takes a detailed message, flags true emergencies for immediate callback, and texts you right away so you can follow up." },
+  { q: "Does Google allow this?", a: "Yes. You are asking your own customers for honest reviews, which Google encourages. We never fake, buy, or filter reviews." },
+  { q: "Do I have to do anything?", a: "No. It runs automatically after each job. You approve the wording once and it takes over from there." },
+  { q: "Will it work with my software?", a: "Yes, with the common trade tools like Jobber, Housecall Pro, and ServiceTitan, and just as well with no software at all." },
+  { q: "How soon will I see reviews?", a: "Requests start going out within days of going live. Your ranking improves over the following weeks as reviews add up. We do not promise a specific number." },
+  { q: "How much is it?", a: "Ninety-seven dollars a month, month to month. One recovered job pays for years." },
 ];
 
 export const PRICING_FAQS: Faq[] = [
-  { q: "What happens if I get a lot of calls?", a: "The price is flat regardless of call volume. There are no per-minute charges and no overage bills." },
-  { q: "What if it cannot answer something?", a: "It takes a message and texts you the details immediately. It never guesses at pricing or makes promises on your behalf." },
-  { q: "How long until it is live?", a: "About five business days from the discovery call. You approve how it sounds before it ever answers a real customer." },
-];
-
-export const BILLING_FAQS: Faq[] = [
-  { q: "Is there a contract?", a: "There is a 90 day minimum, then you can cancel anytime. That window covers building your agent and gives it time to prove itself on your calls." },
-  { q: "What does the setup fee cover?", a: "Building your agent around your services and pricing, connecting your calendar and CRM, porting or forwarding your number, and live testing with you before launch." },
-  { q: "Can I switch tiers later?", a: "Yes, up or down, effective the next billing cycle. No new setup fee unless you are adding locations." },
+  { q: "Is there a contract?", a: "No. Month to month, cancel anytime." },
+  { q: "Is there a setup fee?", a: "No. We help you get live at no extra cost." },
+  { q: "Does the price change with volume?", a: "No. It is flat no matter how many review requests go out." },
+  { q: "What if I use no software?", a: "Still ninety-seven dollars. You add customers in one tap or forward a text." },
 ];
 
 export type OnboardingStep = {
@@ -290,28 +215,27 @@ export type OnboardingStep = {
 };
 
 export const ONBOARDING_STEPS: OnboardingStep[] = [
-  { num: "01", title: "Discovery call", day: "Day 1", desc: "Thirty minutes on your services, pricing, service area, and how you want emergencies handled. We record it and build from the transcript." },
-  { num: "02", title: "Agent build", day: "Days 1 to 3", desc: "We write your greeting, qualifying questions, and booking rules, then train the agent on your business. You review a test recording and mark anything to change." },
-  { num: "03", title: "Number setup", day: "Day 3", desc: "Keep your existing number. We set up forwarding so the AI catches what you cannot, or provision a new tracked line if you prefer." },
-  { num: "04", title: "Testing", day: "Days 4 to 5", desc: "We call it together with your real scenarios: the 2 AM burst pipe, the tire-kicker, the Spanish-speaking caller. It goes live only when you sign off." },
-  { num: "05", title: "Go live + monitoring", day: "Day 5", desc: "Flip the switch. First two weeks we review every call log with you, then tune the agent weekly after that." },
+  { num: "01", title: "Quick call", day: "Day 1", desc: "Fifteen minutes on your trade, your Google Business Profile, and the software you use, if any." },
+  { num: "02", title: "We connect it", day: "Days 1 to 2", desc: "We link your software or set up the simple add-a-customer flow, and point requests at your Google review page." },
+  { num: "03", title: "You approve the wording", day: "Day 2", desc: "We send you a sample text and email. You tweak the tone until it sounds like you, not a robot." },
+  { num: "04", title: "Go live", day: "Day 3", desc: "Requests start going out after every job. You watch the reviews come in from your dashboard." },
 ];
 
 export type ChecklistItem = { title: string; note: string };
 
 export const ONBOARDING_CHECKLIST: ChecklistItem[] = [
-  { title: "Business hours", note: "When you're open, and how after-hours should be handled." },
-  { title: "Services & price ranges", note: "What you do, what you don't, rough ballparks for common jobs." },
-  { title: "Service area", note: "Zip codes or a radius, plus any travel-fee rules." },
-  { title: "Pricing sheet", note: "Whatever you have: a rate card, a spreadsheet, or ballpark numbers." },
-  { title: "Calendar access", note: "Google, Jobber, ServiceTitan, or Housecall Pro login for booking." },
-  { title: "30 minutes for testing", note: "One call with us before launch to hear it live." },
+  { title: "Google Business Profile access", note: "So requests point to the right review page and we can track new reviews." },
+  { title: "Your customer source", note: "A login to the software you use, or we set up a one-tap add-a-customer flow." },
+  { title: "Your trade and service area", note: "What you do and where, so the wording fits your business." },
+  { title: "Your brand voice", note: "How you want the messages to sound. Plain, friendly, with your name on them." },
+  { title: "Fifteen minutes", note: "One short call to get set up and approve the wording." },
 ];
 
 export const INDUSTRY_OPTIONS = [
   "HVAC",
+  "Roofing",
   "Plumbing",
-  "Water damage restoration",
+  "Electrical",
   "Other home services",
 ] as const;
 
@@ -325,61 +249,29 @@ export type Testimonial = {
   rating: number; // 1-5
 };
 
-// Seed testimonials shown on the landing page. The admin can add more, which
-// are stored client-side (see lib/testimonials-store.ts) and merged in.
-export const TESTIMONIALS: Testimonial[] = [
-  {
-    id: "seed-1",
-    quote:
-      "We were losing three or four after-hours calls a night to voicemail. First week on Ring Relay it booked eleven jobs I would've never seen. It paid for itself in two days.",
-    name: "Dave Kowalski",
-    business: "Kowalski Heating & Air",
-    location: "Denver, CO",
-    industry: "HVAC",
-    rating: 5,
-  },
-  {
-    id: "seed-2",
-    quote:
-      "My guys can't answer the phone with their hands in a drain. Now every call gets picked up, qualified, and on the calendar before I'm back in the truck. Customers think it's my office manager.",
-    name: "Omar Haddad",
-    business: "Cascade Plumbing",
-    location: "Denver, CO",
-    industry: "Plumbing",
-    rating: 5,
-  },
-  {
-    id: "seed-3",
-    quote:
-      "In restoration the first company to answer wins the claim. Ring Relay answers on the first ring at 2 AM. Our booked-job rate on emergency calls went up by a third.",
-    name: "Luis Ferrara",
-    business: "Metro Restoration Group",
-    location: "Aurora, CO",
-    industry: "Restoration",
-    rating: 5,
-  },
-];
+// No testimonials yet. Ring Relay is at launch, so we do not show invented
+// proof. The section stays hidden until real reviews come in.
+export const TESTIMONIALS: Testimonial[] = [];
 
-// Ring Relay vs the alternatives owners are mentally comparing against.
+// Ring Relay vs the alternatives an owner is weighing.
 export type CompareValue = boolean | string;
 export const COMPARISON: {
   columns: string[];
   rows: { label: string; values: CompareValue[] }[];
 } = {
-  columns: ["Ring Relay", "Voicemail", "Answering service"],
+  columns: ["Ring Relay", "Asking by hand", "Big platforms"],
   rows: [
-    { label: "Answers 24/7", values: [true, "Records only", "Business hours"] },
-    { label: "Books the appointment", values: [true, false, "Takes a message"] },
-    { label: "Filters spam & robocalls", values: [true, false, false] },
-    { label: "Knows your services & pricing", values: [true, false, "Generic script"] },
-    { label: "Texts you a full summary", values: [true, false, "Sometimes"] },
-    { label: "Bilingual EN / ES", values: [true, false, "Extra fee"] },
-    { label: "Cost", values: ["Flat monthly", "Free (loses jobs)", "$1 to $2 / minute"] },
+    { label: "Runs automatically after every job", values: [true, false, "Sometimes"] },
+    { label: "Timed and followed up for you", values: [true, "If you remember", true] },
+    { label: "Works with no software", values: [true, true, false] },
+    { label: "Set up done for you", values: [true, false, "Extra fee"] },
+    { label: "Built for small trades", values: [true, true, "Built for enterprise"] },
+    { label: "Price", values: ["$97 / month", "Free but forgotten", "Hundreds / month"] },
   ],
 };
 
 /* ------------------------------------------------------------------ */
-/*  Admin navigation (data comes from Supabase — see lib/data/*)        */
+/*  Admin navigation (data comes from Supabase, see lib/data/*)         */
 /* ------------------------------------------------------------------ */
 
 export type AdminNavItem = {

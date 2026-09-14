@@ -5,17 +5,12 @@ import { Eyebrow } from "@/components/site/section";
 import { Reveal } from "@/components/site/reveal";
 import { FaqAccordion } from "@/components/site/faq-accordion";
 import { CtaBand } from "@/components/site/cta-band";
-import {
-  PRICING_TIERS,
-  COMPARE_ROWS,
-  PRICING_FAQS,
-  BILLING_FAQS,
-} from "@/lib/mock-data";
+import { PLAN, PRICING_FAQS } from "@/lib/mock-data";
 
 export const metadata: Metadata = {
   title: "Pricing",
   description:
-    "One-time setup, flat monthly retainer. Three tiers for HVAC, plumbing, and restoration. Cancel anytime after 90 days.",
+    "One simple plan at $97 a month. Everything included, no setup fee, no contract. Automatic Google reviews for HVAC and roofing pros.",
 };
 
 export default function PricingPage() {
@@ -26,190 +21,77 @@ export default function PricingPage() {
           <Eyebrow>02 · Pricing</Eyebrow>
         </div>
         <h1 className="fade-2 mt-[26px] text-balance font-display text-[42px] font-extrabold leading-[1.02] tracking-[-0.035em] text-ink sm:text-[58px]">
-          Costs less than{" "}
-          <span className="headline-em">one missed job.</span>
+          Simple pricing.{" "}
+          <span className="headline-em">One plan.</span>
         </h1>
         <p className="fade-3 mx-auto mt-[22px] max-w-[560px] text-pretty text-[19px] leading-[1.65] text-body">
-          No per-minute surprises. Cancel anytime after 90 days. Costs less than
-          one missed job.
+          No setup fee, no contract, no per-message charges. One recovered job
+          pays for years.
         </p>
       </section>
 
-      {/* Tiers */}
-      <section className="relative mx-auto max-w-[1280px] px-6 pb-[72px] md:px-10">
-        <div className="grid grid-cols-1 items-stretch gap-6 md:grid-cols-3">
-          {PRICING_TIERS.map((tier, i) => {
-            const popular = tier.popular;
-            return (
-              <Reveal
-                key={tier.id}
-                delay={i * 80}
-                className={
-                  "relative flex flex-col rounded-[22px] p-[34px_30px] " +
-                  (popular
-                    ? "border-[1.5px] border-ink bg-ink shadow-[0_28px_64px_rgba(15,27,45,0.28)]"
-                    : "border border-line2 bg-card shadow-soft")
-                }
-              >
-                {popular && (
-                  <div className="absolute left-1/2 top-[-13px] -translate-x-1/2 whitespace-nowrap rounded-[6px] bg-acc px-[14px] py-[6px] font-mono text-[10.5px] font-semibold tracking-[0.14em] text-white">
-                    MOST POPULAR
-                  </div>
-                )}
-                <div
-                  className={
-                    "mb-[6px] font-display text-[21px] font-bold tracking-[-0.02em] " +
-                    (popular ? "text-white" : "text-ink")
-                  }
-                >
-                  {tier.name}
-                </div>
-                <div
-                  className={
-                    "mb-[26px] min-h-[44px] text-[14.5px] leading-[1.5] " +
-                    (popular ? "text-white/65" : "text-body")
-                  }
-                >
-                  {tier.blurb}
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span
-                    className={
-                      "font-display text-[46px] font-extrabold tracking-[-0.03em] " +
-                      (popular ? "text-white" : "text-ink")
-                    }
-                  >
-                    {tier.monthly}
-                  </span>
-                  <span
-                    className={
-                      "text-[15px] font-semibold " +
-                      (popular ? "text-white/65" : "text-body")
-                    }
-                  >
-                    /mo
-                  </span>
-                </div>
-                <div className="mt-2 font-mono text-[12px] font-semibold tracking-[0.06em] text-acc-dim">
-                  + {tier.setup} one-time setup
-                </div>
-                <div
-                  className={
-                    "mb-[24px] mt-[10px] text-[13px] font-medium leading-[1.45] " +
-                    (popular ? "text-white/70" : "text-mute")
-                  }
-                >
-                  {tier.valueLine}
-                </div>
-                <div
-                  className={
-                    "mb-[22px] h-px " +
-                    (popular ? "bg-white/[0.12]" : "bg-line")
-                  }
-                />
-                <ul className="flex flex-1 flex-col gap-3">
-                  {tier.features.map((feat) => (
-                    <li key={feat} className="flex items-start gap-[10px]">
-                      <Check
-                        size={16}
-                        strokeWidth={2.6}
-                        className="mt-[2.5px] shrink-0 text-acc"
-                      />
-                      <span
-                        className={
-                          "text-[14.5px] leading-[1.5] " +
-                          (popular ? "text-white/85" : "text-bubble-ink")
-                        }
-                      >
-                        {feat}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href="/contact"
-                  className={
-                    "mt-7 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full px-4 py-[14px] text-[14px] font-bold transition-all duration-200 hover:-translate-y-0.5 hover:brightness-105 lg:px-6 lg:text-[15.5px] " +
-                    (popular
-                      ? "bg-acc text-white"
-                      : "border-[1.5px] border-line2 text-ink")
-                  }
-                >
-                  {tier.cta}
-                </Link>
-              </Reveal>
-            );
-          })}
-        </div>
-        <p className="mx-auto mt-9 max-w-[620px] text-center text-[15px] leading-[1.6] text-body">
-          The average HVAC replacement runs $8,000 to $15,000. Restoration jobs
-          run higher. One missed call costs more than a year of this.
-        </p>
-      </section>
-
-      {/* Comparison table */}
-      <section className="relative mx-auto max-w-[1080px] px-6 pb-[88px] md:px-10">
-        <h2 className="mb-7 text-center font-display text-[28px] font-extrabold tracking-[-0.03em] text-ink sm:text-[34px]">
-          Compare plans
-        </h2>
-        <div className="overflow-x-auto rounded-[18px] border border-line2 bg-card shadow-card">
-          <div className="min-w-[640px]">
-            <div className="grid grid-cols-[2.2fr_1fr_1fr_1fr] border-b border-line2 bg-panel px-[26px] py-4">
-              <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-mute">
-                Feature
+      {/* The plan */}
+      <section className="relative mx-auto max-w-[480px] px-6 pb-[56px] md:px-10">
+        <Reveal>
+          <div className="relative flex flex-col rounded-[22px] border-[1.5px] border-ink bg-ink p-8 shadow-[0_28px_64px_rgba(15,27,45,0.28)]">
+            <div className="font-display text-[22px] font-bold tracking-[-0.02em] text-white">
+              {PLAN.name}
+            </div>
+            <div className="mt-1 text-[14.5px] leading-[1.5] text-white/65">
+              {PLAN.blurb}
+            </div>
+            <div className="flex items-baseline gap-2 pt-5">
+              <span className="font-display text-[56px] font-extrabold leading-none tracking-[-0.03em] text-white">
+                {PLAN.price}
               </span>
-              <span className="text-center font-display text-[14.5px] font-bold text-ink">
-                Starter
-              </span>
-              <span className="text-center font-display text-[14.5px] font-bold text-acc">
-                Pro
-              </span>
-              <span className="text-center font-display text-[14.5px] font-bold text-ink">
-                Multi-location
+              <span className="text-[16px] font-semibold text-white/65">
+                {PLAN.cadence}
               </span>
             </div>
-            {COMPARE_ROWS.map((row) => (
-              <div
-                key={row.label}
-                className="grid grid-cols-[2.2fr_1fr_1fr_1fr] items-center border-b border-line px-[26px] py-[14px] last:border-b-0"
-              >
-                <span className="text-[14.5px] font-semibold text-bubble-ink">
-                  {row.label}
-                </span>
-                <span className="text-center text-[14px] font-semibold text-body">
-                  {row.starter}
-                </span>
-                <span className="mx-2 rounded-[8px] bg-ai-bg2 py-[6px] text-center text-[14px] font-semibold text-body">
-                  {row.pro}
-                </span>
-                <span className="text-center text-[14px] font-semibold text-body">
-                  {row.multi}
-                </span>
-              </div>
-            ))}
+            <div className="mt-3 font-mono text-[12px] font-semibold tracking-[0.06em] text-white/60">
+              {PLAN.valueLine}
+            </div>
+            <div className="my-6 h-px bg-white/[0.12]" />
+            <ul className="flex flex-col gap-3">
+              {PLAN.features.map((feat) => (
+                <li key={feat} className="flex items-start gap-[10px]">
+                  <Check size={16} strokeWidth={2.6} className="mt-[2.5px] shrink-0 text-acc" />
+                  <span className="text-[14.5px] leading-[1.5] text-white/85">
+                    {feat}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <Link
+              href="/contact"
+              className="mt-7 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full bg-acc px-6 py-[14px] text-[15.5px] font-bold text-white transition-all duration-200 hover:-translate-y-0.5 hover:brightness-105"
+            >
+              {PLAN.cta}
+            </Link>
           </div>
+        </Reveal>
+
+        <div className="mx-auto mt-6 max-w-[440px] rounded-[16px] border border-acc/30 bg-acc/[0.06] px-5 py-4 text-center">
+          <div className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-acc-dim">
+            Founding customer offer
+          </div>
+          <p className="mt-2 text-[14px] leading-[1.6] text-body">
+            {PLAN.foundingOffer}
+          </p>
         </div>
       </section>
 
       {/* Pricing FAQ */}
-      <section className="relative mx-auto max-w-[760px] px-6 pb-14 md:px-10">
+      <section className="relative mx-auto max-w-[760px] px-6 pb-[88px] md:px-10">
         <h2 className="mb-7 text-center font-display text-[28px] font-extrabold tracking-[-0.03em] text-ink sm:text-[34px]">
           Common questions
         </h2>
         <FaqAccordion faqs={PRICING_FAQS} />
       </section>
 
-      {/* Billing FAQ */}
-      <section className="relative mx-auto max-w-[760px] px-6 pb-[88px] md:px-10">
-        <h2 className="mb-7 text-center font-display text-[28px] font-extrabold tracking-[-0.03em] text-ink sm:text-[34px]">
-          Billing questions
-        </h2>
-        <FaqAccordion faqs={BILLING_FAQS} />
-      </section>
-
       <CtaBand
-        title="Not sure which tier fits?"
-        subtitle="Tell us your call volume on the demo and we'll tell you straight."
+        title="Ninety-seven dollars. One recovered job pays for years."
+        subtitle="Book a short demo and we will show you your review gap against the top shop in your area."
       />
     </>
   );

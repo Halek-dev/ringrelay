@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { ArrowRight, Menu, X, Mic } from "lucide-react";
+import { ArrowRight, Menu, X } from "lucide-react";
 import { Logo } from "@/components/site/logo";
 import { NAV_LINKS } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
@@ -37,16 +37,6 @@ export function SiteHeader() {
               </Link>
             );
           })}
-          <Link
-            href="/demo"
-            className={cn(
-              "ml-[10px] inline-flex items-center gap-2 whitespace-nowrap rounded-full border-[1.5px] border-acc/50 px-[15px] py-[8px] text-[15px] font-bold text-acc-dim transition-all duration-150 hover:border-acc hover:bg-ai-bg2",
-              pathname === "/demo" && "bg-ai-bg2",
-            )}
-          >
-            <Mic size={15} strokeWidth={2.3} />
-            Try the Demo
-          </Link>
           <Link
             href="/contact"
             className="ml-[10px] inline-flex items-center gap-3 whitespace-nowrap rounded-full bg-ink py-2 pl-[22px] pr-2 text-[15px] font-bold text-bg transition-all duration-200 hover:-translate-y-px hover:bg-acc hover:text-white"
@@ -88,14 +78,6 @@ export function SiteHeader() {
               {link.label}
             </Link>
           ))}
-          <Link
-            href="/demo"
-            onClick={() => setOpen(false)}
-            className="mt-2 inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-full border-[1.5px] border-acc/50 px-6 py-3 text-[15px] font-bold text-acc-dim"
-          >
-            <Mic size={16} strokeWidth={2.3} />
-            Try the Demo
-          </Link>
           <Link
             href="/contact"
             onClick={() => setOpen(false)}

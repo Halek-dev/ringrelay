@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Mic } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Logo } from "@/components/site/logo";
 import { PrimaryCta } from "@/components/site/buttons";
 
@@ -21,22 +21,22 @@ export default function NotFound() {
           Error 404
         </span>
         <h1 className="mt-5 max-w-[620px] text-balance font-display text-[40px] font-extrabold leading-[1.04] tracking-[-0.035em] text-ink sm:text-[56px]">
-          This line went{" "}
-          <span className="headline-em">straight to voicemail.</span>
+          This page is off{" "}
+          <span className="headline-em">the map.</span>
         </h1>
         <p className="mt-5 max-w-[440px] text-[17px] leading-[1.6] text-body">
-          The page you were after doesn&apos;t exist or moved. Unlike a missed
-          call, this one&apos;s easy to fix.
+          The page you were after doesn&apos;t exist or moved. This one is easy
+          to fix.
         </p>
 
         <div className="mt-9 flex flex-col items-center gap-4 sm:flex-row">
           <PrimaryCta href="/">Back to home</PrimaryCta>
           <Link
-            href="/demo"
+            href="/contact"
             className="inline-flex items-center gap-2 text-[15px] font-bold text-acc-dim hover:text-acc"
           >
-            <Mic size={16} strokeWidth={2.2} />
-            Or try the live demo
+            Book a demo
+            <ArrowRight size={16} strokeWidth={2.4} />
           </Link>
         </div>
       </main>

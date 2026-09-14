@@ -8,7 +8,7 @@ import { ONBOARDING_STEPS, ONBOARDING_CHECKLIST } from "@/lib/mock-data";
 export const metadata: Metadata = {
   title: "Onboarding",
   description:
-    "From kickoff to answering live in about five business days. Here's the five-step onboarding journey.",
+    "Live in a few days, done with you. The short setup to start collecting Google reviews automatically after every job.",
 };
 
 export default function OnboardingPage() {
@@ -19,16 +19,17 @@ export default function OnboardingPage() {
           <Eyebrow>03 · Onboarding</Eyebrow>
         </div>
         <h1 className="fade-2 mt-[26px] text-balance font-display text-[42px] font-extrabold leading-[1.02] tracking-[-0.035em] text-ink sm:text-[58px]">
-          From kickoff to{" "}
-          <span className="headline-em">answering live.</span>
+          Live in a few days,{" "}
+          <span className="headline-em">done with you.</span>
         </h1>
         <p className="fade-3 mx-auto mb-9 mt-[22px] max-w-[560px] text-pretty text-[19px] leading-[1.65] text-body">
-          Five steps. We do the heavy lifting; you keep running jobs.
+          A short setup, then it runs on its own. We do the heavy lifting; you
+          keep running jobs.
         </p>
         <div className="fade-4 inline-flex items-center gap-[10px] rounded-full border border-ai-line bg-ai-bg2 px-5 py-[10px]">
           <Clock size={16} strokeWidth={2.2} className="text-acc" />
           <span className="font-mono text-[12.5px] font-semibold tracking-[0.08em] text-acc-dim">
-            TYPICALLY LIVE IN ~5 BUSINESS DAYS
+            TYPICALLY LIVE IN A FEW DAYS
           </span>
         </div>
       </section>
@@ -68,16 +69,16 @@ export default function OnboardingPage() {
             />
             <p className="text-[14px] leading-[1.6] text-body">
               Total hands-on time from you is about{" "}
-              <strong className="text-ink">90 minutes</strong> across the five
-              days. Everything else is on us.
+              <strong className="text-ink">fifteen minutes</strong>. Everything
+              else is on us.
             </p>
           </div>
         </div>
       </section>
 
       <CtaBand
-        title="Day one starts with a call."
-        subtitle="Book the demo and we'll map your call flow on the spot."
+        title="Day one starts with a short call."
+        subtitle="Book the demo and we will get you set up to collect reviews on autopilot."
       />
     </>
   );

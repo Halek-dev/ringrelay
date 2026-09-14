@@ -7,16 +7,20 @@ import { TESTIMONIALS, type Testimonial } from "@/lib/mock-data";
 import { useStoredTestimonials } from "@/lib/testimonials-store";
 
 export function Testimonials() {
-  // Seed data renders on the server; admin-added ones merge in after mount.
+  // Admin-added testimonials merge in after mount. At launch there are none,
+  // so the whole section stays hidden until real reviews come in. No invented
+  // proof.
   const stored = useStoredTestimonials();
   const all: Testimonial[] = [...stored, ...TESTIMONIALS];
+
+  if (all.length === 0) return null;
 
   return (
     <section className="relative mx-auto max-w-[1280px] px-6 py-16 md:px-10">
       <Reveal className="mb-12 text-center">
         <Eyebrow>From the trades</Eyebrow>
         <h2 className="mx-auto mt-4 max-w-[620px] text-balance font-display text-[34px] font-extrabold tracking-[-0.03em] text-ink">
-          Owners who stopped missing calls.
+          What owners are saying.
         </h2>
       </Reveal>
 

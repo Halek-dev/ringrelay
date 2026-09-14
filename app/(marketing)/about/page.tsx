@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, PhoneMissed, Bot, Handshake } from "lucide-react";
+import { ArrowRight, Search, Star, Handshake } from "lucide-react";
 import { Eyebrow } from "@/components/site/section";
 import { Reveal } from "@/components/site/reveal";
 import { TeamSection } from "@/components/site/team-section";
@@ -9,13 +9,13 @@ import { CtaBand } from "@/components/site/cta-band";
 export const metadata: Metadata = {
   title: "About",
   description:
-    "Ring Relay sets up AI phone receptionists for US home services businesses so missed calls stop turning into missed jobs.",
+    "Ring Relay helps HVAC and roofing owners win the Google reviews that win the call, automatically after every job.",
 };
 
 export const dynamic = "force-dynamic";
 
 // Honesty rule: no invented history, headcount, client counts, or milestones.
-// The story below claims only what is true of an early stage agency.
+// The story below claims only what is true of an early-stage company.
 export default function AboutPage() {
   return (
     <>
@@ -24,13 +24,14 @@ export default function AboutPage() {
           <Eyebrow>About</Eyebrow>
         </div>
         <h1 className="fade-2 mt-[26px] text-balance font-display text-[42px] font-extrabold leading-[1.02] tracking-[-0.035em] text-ink sm:text-[54px]">
-          Missed calls are <span className="headline-em">missed jobs.</span>
+          We win the reviews that{" "}
+          <span className="headline-em">win the call.</span>
         </h1>
         <p className="fade-3 mx-auto mt-[22px] max-w-[620px] text-pretty text-[18px] leading-[1.65] text-body">
-          Ring Relay is an agency founded in 2026. We set up AI phone
-          receptionists for US home services businesses: plumbers, HVAC shops,
-          and water damage restoration companies whose crews are on jobs when
-          the phone rings.
+          Ring Relay is an early-stage company founded in 2026. We build one
+          thing well: an automatic system that turns your happy customers into
+          fresh 5-star Google reviews, so HVAC and roofing owners rank higher on
+          the map and get more calls from the marketing they already pay for.
         </p>
       </section>
 
@@ -38,19 +39,19 @@ export default function AboutPage() {
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {[
             {
-              icon: PhoneMissed,
+              icon: Search,
               title: "The problem",
-              body: "A tradesperson on a roof or under a sink cannot answer the phone. The caller does not leave a voicemail. They call the next company on the list, and that job is gone.",
+              body: "When a homeowner searches, they call one of the top three shops on the map. That spot goes to whoever has more recent 5-star reviews. Few or stale reviews and you lose the click you already paid for.",
             },
             {
-              icon: Bot,
+              icon: Star,
               title: "What we do",
-              body: "We build and run an AI receptionist for each client. It answers every call, speaks naturally, filters spam, books real appointments into their calendar, and texts them a summary.",
+              body: "We ask every one of your customers for a Google review right after the job, by text and email, with a friendly follow-up. Happy customers leave reviews, you climb the rankings, and more people call.",
             },
             {
               icon: Handshake,
               title: "How we work",
-              body: "We are a small, remote first team, and we set every agent up by hand around the client's services, pricing, and schedule. Nothing goes live until the owner has heard it and signed off.",
+              body: "We are a small, remote team. We set every account up ourselves, work with whatever software you have or none at all, and we never fake or buy reviews. We ask your real customers, the honest way.",
             },
           ].map((c, i) => (
             <Reveal key={c.title} delay={i * 80}>
@@ -73,14 +74,11 @@ export default function AboutPage() {
           </h2>
           <p className="mt-3 max-w-[720px] text-[15.5px] leading-[1.7] text-body">
             We are early. We will not pretend otherwise with invented client
-            counts or a wall of logos. What we have is a working product you can{" "}
-            <Link href="/demo" className="font-bold text-acc-dim underline hover:text-acc">
-              try in your browser right now
-            </Link>
-            , a clear focus on one kind of customer, and the intention to grow
-            by doing careful work for a small number of clients at a time. If
-            that sounds like the kind of company you want answering your phone,
-            we would like to talk.
+            counts or a wall of logos. What we have is a product that does one
+            job well, a clear focus on one kind of customer, and the intention
+            to grow by doing careful work for a small number of shops at a time.
+            If that sounds like the kind of company you want in your corner, we
+            would like to talk.
           </p>
           <Link
             href="/contact"
@@ -95,8 +93,8 @@ export default function AboutPage() {
       <TeamSection />
 
       <CtaBand
-        title="Want to hear it answer?"
-        subtitle="Try the live demo in your browser. No signup, no phone call."
+        title="Ready to be the top of the map?"
+        subtitle="Book a short demo and we will show you your review gap against the top shop in your area."
       />
     </>
   );

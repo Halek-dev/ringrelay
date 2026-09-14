@@ -1,24 +1,22 @@
 import Link from "next/link";
-import { Mic, ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import { PrimaryCta, SecondaryCta } from "@/components/site/buttons";
-import { LiveCallCard } from "@/components/site/live-call-card";
+import { ReviewHeroCard } from "@/components/site/review-hero-card";
 import { Reveal } from "@/components/site/reveal";
 import { Eyebrow } from "@/components/site/section";
 import { FaqAccordion } from "@/components/site/faq-accordion";
 import { CtaBand } from "@/components/site/cta-band";
-import { RoiCalculator } from "@/components/site/roi-calculator";
 import { Comparison } from "@/components/site/comparison";
 import { Testimonials } from "@/components/site/testimonials";
 import { JsonLd } from "@/components/site/json-ld";
 import { Icon } from "@/components/icon";
 import {
-  AGENCY,
   HERO,
   PROBLEM_STATS,
   HOME_STEPS,
   FEATURES,
   INDUSTRIES,
-  PRICING_TIERS,
+  PLAN,
   HOME_FAQS,
 } from "@/lib/mock-data";
 
@@ -30,7 +28,6 @@ export default function HomePage() {
       {/* Hero                                                             */}
       {/* ---------------------------------------------------------------- */}
       <section className="relative mx-auto grid max-w-[1280px] grid-cols-1 items-center gap-16 px-6 pb-24 pt-16 md:px-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-[76px] lg:pt-[84px]">
-        {/* Corner glow (home only) */}
         <div className="pointer-events-none absolute right-[-120px] top-[-200px] h-[620px] w-[620px] rounded-full bg-[radial-gradient(circle,var(--glow)_0%,transparent_65%)]" />
 
         <div className="relative">
@@ -44,7 +41,7 @@ export default function HomePage() {
             </span>
           </div>
 
-          <h1 className="fade-2 m-0 text-balance font-display text-[44px] font-extrabold leading-[1.02] tracking-[-0.035em] text-ink sm:text-[56px] lg:text-[72px] lg:leading-[1.0]">
+          <h1 className="fade-2 m-0 text-balance font-display text-[44px] font-extrabold leading-[1.02] tracking-[-0.035em] text-ink sm:text-[56px] lg:text-[68px] lg:leading-[1.02]">
             {HERO.headlinePre}{" "}
             <span className="headline-em">{HERO.headlineEm}</span>
           </h1>
@@ -53,24 +50,13 @@ export default function HomePage() {
             {HERO.sub}
           </p>
 
-          <div className="fade-4 mb-8 flex flex-col items-stretch gap-[12px] sm:flex-row sm:items-center">
+          <div className="fade-4 mb-14 flex flex-col items-stretch gap-[12px] sm:flex-row sm:items-center">
             <PrimaryCta href="/contact" className="w-full sm:w-auto">
-              Book a Demo
+              Book a demo
             </PrimaryCta>
             <SecondaryCta href="/how-it-works" className="w-full sm:w-auto">
-              See How It Works
+              See how it works
             </SecondaryCta>
-          </div>
-
-          <div className="mb-14">
-            <Link
-              href="/demo"
-              className="inline-flex items-center gap-[9px] text-[14.5px] font-semibold text-acc-dim hover:text-acc"
-            >
-              <Mic size={15} strokeWidth={2.2} className="text-acc" />
-              Try it yourself: talk to the AI right now
-              <ArrowRight size={15} strokeWidth={2.4} />
-            </Link>
           </div>
 
           <div className="fade-5 flex flex-wrap items-center gap-x-[22px] gap-y-3 border-t border-line pt-[26px]">
@@ -92,18 +78,18 @@ export default function HomePage() {
         </div>
 
         <Reveal className="relative">
-          <LiveCallCard />
+          <ReviewHeroCard />
         </Reveal>
       </section>
 
       {/* ---------------------------------------------------------------- */}
-      {/* Problem stats                                                    */}
+      {/* Why reviews win                                                  */}
       {/* ---------------------------------------------------------------- */}
       <section className="relative mx-auto max-w-[1280px] px-6 py-16 md:px-10">
         <Reveal className="mb-12 max-w-[620px]">
-          <Eyebrow>The cost of a missed call</Eyebrow>
+          <Eyebrow>Why reviews win</Eyebrow>
           <h2 className="mt-4 text-balance font-display text-[34px] font-extrabold tracking-[-0.03em] text-ink">
-            The phone rings whether you can answer it or not.
+            The business with the most reviews wins the call.
           </h2>
         </Reveal>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -127,8 +113,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      <RoiCalculator />
-
       {/* ---------------------------------------------------------------- */}
       {/* How it works (3 steps)                                           */}
       {/* ---------------------------------------------------------------- */}
@@ -136,7 +120,7 @@ export default function HomePage() {
         <Reveal className="mb-12 text-center">
           <Eyebrow>How it works</Eyebrow>
           <h2 className="mx-auto mt-4 max-w-[620px] text-balance font-display text-[34px] font-extrabold tracking-[-0.03em] text-ink">
-            One missed call becomes a booked job in three steps.
+            More 5-star reviews in three steps.
           </h2>
         </Reveal>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -159,9 +143,7 @@ export default function HomePage() {
           ))}
         </div>
         <div className="mt-10 text-center">
-          <SecondaryCta href="/how-it-works">
-            See the full call walkthrough
-          </SecondaryCta>
+          <SecondaryCta href="/how-it-works">See the full walkthrough</SecondaryCta>
         </div>
       </section>
 
@@ -172,7 +154,7 @@ export default function HomePage() {
         <Reveal className="mb-12 max-w-[620px]">
           <Eyebrow>Everything it does</Eyebrow>
           <h2 className="mt-4 text-balance font-display text-[34px] font-extrabold tracking-[-0.03em] text-ink">
-            A full front office on your phone line.
+            A review machine that runs itself.
           </h2>
         </Reveal>
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -205,7 +187,7 @@ export default function HomePage() {
         <Reveal className="mb-12 text-center">
           <Eyebrow>Who it&apos;s for</Eyebrow>
           <h2 className="mx-auto mt-4 max-w-[620px] text-balance font-display text-[34px] font-extrabold tracking-[-0.03em] text-ink">
-            Built for the trades that live on the phone.
+            Built for local pros who live or die by the map.
           </h2>
         </Reveal>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -232,108 +214,60 @@ export default function HomePage() {
       <Testimonials />
 
       {/* ---------------------------------------------------------------- */}
-      {/* Pricing teaser                                                   */}
+      {/* Pricing teaser (one plan)                                        */}
       {/* ---------------------------------------------------------------- */}
       <section className="relative mx-auto max-w-[1280px] px-6 py-16 md:px-10">
         <Reveal className="mb-12 text-center">
           <Eyebrow>Simple pricing</Eyebrow>
           <h2 className="mx-auto mt-4 max-w-[620px] text-balance font-display text-[34px] font-extrabold tracking-[-0.03em] text-ink">
-            One-time setup, flat monthly retainer.
+            One plan. One price. Cancel anytime.
           </h2>
           <p className="mx-auto mt-4 max-w-[520px] text-[17px] leading-[1.6] text-body">
-            No per-minute surprises. Cancel anytime after 90 days. Costs less
-            than one missed job.
+            No setup fee, no contract, no per-message charges. One recovered job
+            pays for years.
           </p>
         </Reveal>
 
-        <div className="grid grid-cols-1 items-stretch gap-6 md:grid-cols-3">
-          {PRICING_TIERS.map((tier, i) => {
-            const popular = tier.popular;
-            return (
-              <Reveal
-                key={tier.id}
-                delay={i * 80}
-                className={
-                  "relative flex flex-col rounded-[22px] p-8 " +
-                  (popular
-                    ? "border-[1.5px] border-ink bg-ink shadow-[0_28px_64px_rgba(15,27,45,0.28)]"
-                    : "border border-line2 bg-card shadow-soft")
-                }
-              >
-                {popular && (
-                  <div className="absolute left-1/2 top-[-13px] -translate-x-1/2 whitespace-nowrap rounded-[6px] bg-acc px-[14px] py-[6px] font-mono text-[10.5px] font-semibold tracking-[0.14em] text-white">
-                    MOST POPULAR
-                  </div>
-                )}
-                <div
-                  className={
-                    "font-display text-[21px] font-bold tracking-[-0.02em] " +
-                    (popular ? "text-white" : "text-ink")
-                  }
-                >
-                  {tier.name}
-                </div>
-                <div className="flex items-baseline gap-2 pt-4">
-                  <span
-                    className={
-                      "font-display text-[46px] font-extrabold tracking-[-0.03em] " +
-                      (popular ? "text-white" : "text-ink")
-                    }
-                  >
-                    {tier.monthly}
+        <Reveal className="mx-auto max-w-[440px]">
+          <div className="relative flex flex-col rounded-[22px] border-[1.5px] border-ink bg-ink p-8 shadow-[0_28px_64px_rgba(15,27,45,0.28)]">
+            <div className="font-display text-[21px] font-bold tracking-[-0.02em] text-white">
+              {PLAN.name}
+            </div>
+            <div className="flex items-baseline gap-2 pt-4">
+              <span className="font-display text-[52px] font-extrabold tracking-[-0.03em] text-white">
+                {PLAN.price}
+              </span>
+              <span className="text-[15px] font-semibold text-white/65">
+                {PLAN.cadence}
+              </span>
+            </div>
+            <div className="mt-2 font-mono text-[12px] font-semibold tracking-[0.06em] text-white/60">
+              {PLAN.valueLine}
+            </div>
+            <ul className="mt-6 flex flex-1 flex-col gap-3">
+              {PLAN.features.slice(0, 5).map((feat) => (
+                <li key={feat} className="flex items-start gap-[10px]">
+                  <Check size={16} strokeWidth={2.6} className="mt-[2.5px] shrink-0 text-acc" />
+                  <span className="text-[14.5px] leading-[1.5] text-white/85">
+                    {feat}
                   </span>
-                  <span
-                    className={
-                      "text-[15px] font-semibold " +
-                      (popular ? "text-white/65" : "text-body")
-                    }
-                  >
-                    /mo
-                  </span>
-                </div>
-                <div className="mt-2 font-mono text-[12px] font-semibold tracking-[0.06em] text-acc-dim">
-                  + {tier.setup} one-time setup
-                </div>
-                <ul className="mt-6 flex flex-1 flex-col gap-3">
-                  {tier.features.slice(0, 4).map((feat) => (
-                    <li key={feat} className="flex items-start gap-[10px]">
-                      <Check
-                        size={16}
-                        strokeWidth={2.6}
-                        className="mt-[2.5px] shrink-0 text-acc"
-                      />
-                      <span
-                        className={
-                          "text-[14.5px] leading-[1.5] " +
-                          (popular ? "text-white/85" : "text-bubble-ink")
-                        }
-                      >
-                        {feat}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href="/pricing"
-                  className={
-                    "mt-7 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full px-4 py-[13px] text-[14px] font-bold transition-all duration-200 hover:-translate-y-0.5 lg:px-6 lg:text-[15.5px] " +
-                    (popular
-                      ? "bg-acc text-white"
-                      : "border-[1.5px] border-line2 text-ink")
-                  }
-                >
-                  {tier.cta}
-                </Link>
-              </Reveal>
-            );
-          })}
-        </div>
-        <div className="mt-10 text-center">
+                </li>
+              ))}
+            </ul>
+            <Link
+              href="/contact"
+              className="mt-7 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full bg-acc px-6 py-[14px] text-[15.5px] font-bold text-white transition-all duration-200 hover:-translate-y-0.5 hover:brightness-105"
+            >
+              {PLAN.cta}
+            </Link>
+          </div>
+        </Reveal>
+        <div className="mt-8 text-center">
           <Link
             href="/pricing"
             className="inline-flex items-center gap-2 font-semibold text-acc-dim hover:text-acc"
           >
-            Compare all plans <ArrowRight size={16} strokeWidth={2.4} />
+            See what is included <ArrowRight size={16} strokeWidth={2.4} />
           </Link>
         </div>
       </section>
@@ -354,8 +288,8 @@ export default function HomePage() {
       </section>
 
       <CtaBand
-        title="Stop losing jobs to voicemail."
-        subtitle="Fifteen minutes. We'll call your line live on the demo."
+        title="Ready to be the top of the map?"
+        subtitle="Book a short demo and we will show you your review gap against the top shop in your area."
       />
     </>
   );

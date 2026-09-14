@@ -25,13 +25,13 @@ export default async function CareersPage() {
           <Eyebrow>Careers</Eyebrow>
         </div>
         <h1 className="fade-2 mt-[26px] text-balance font-display text-[42px] font-extrabold leading-[1.02] tracking-[-0.035em] text-ink sm:text-[54px]">
-          Help us answer <span className="headline-em">the missed calls.</span>
+          Help local pros <span className="headline-em">win the map.</span>
         </h1>
         <p className="fade-3 mx-auto mt-[22px] max-w-[600px] text-pretty text-[18px] leading-[1.65] text-body">
-          Ring Relay is an early stage agency. We set up AI phone receptionists
-          for US home services businesses so they stop losing jobs to missed
-          calls. We are remote first and hiring our first team members. Small
-          team, real responsibility, honest work.
+          Ring Relay is an early stage company. We help HVAC and roofing owners
+          get more 5-star Google reviews automatically, so they rank higher and
+          get more calls. We are remote first and hiring our first team members.
+          Small team, real responsibility, honest work.
         </p>
       </section>
 

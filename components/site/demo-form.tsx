@@ -46,7 +46,7 @@ export function DemoForm() {
       e.phone = "Enter a valid phone number.";
     if (!EMAIL_RE.test(fields.email)) e.email = "Enter a valid email.";
     if (!fields.problem.trim())
-      e.problem = "A sentence on your call problem helps us prep.";
+      e.problem = "A sentence on your reviews helps us prep.";
     return e;
   }
 
@@ -167,13 +167,13 @@ export function DemoForm() {
           </select>
         </Field>
         <Field
-          label="What's your biggest call problem?"
+          label="Where are you with Google reviews?"
           error={errors.problem}
           className="sm:col-span-2"
         >
           <textarea
             rows={4}
-            placeholder="We miss maybe 10 calls a week when the crew is out. After-hours goes to voicemail and nobody leaves one."
+            placeholder="We have about 20 reviews and most are a year old. We run Google Ads but never ask customers for reviews."
             value={fields.problem}
             onChange={(e) => update("problem", e.target.value)}
             className={cn(

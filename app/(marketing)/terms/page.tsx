@@ -5,7 +5,7 @@ import { LegalPage, LegalSection, LegalList } from "@/components/site/legal-page
 export const metadata: Metadata = {
   title: "Terms of Service",
   description:
-    "The terms that govern Ring Relay's AI receptionist service: setup, monthly retainer, the 90 day minimum, and what we do and do not promise.",
+    "The terms that govern Ring Relay's automated review request service: the monthly fee, what we do and do not promise, and how we handle reviews honestly.",
 };
 
 // Entity and governing-law details are filled in; keep them current if the
@@ -25,58 +25,55 @@ export default function TermsPage() {
 
       <LegalSection title="2. The service">
         <p>
-          Ring Relay sets up and operates an AI powered phone receptionist for
-          your business. It answers calls, holds natural conversations, filters
-          spam, collects caller details, and books appointments according to the
-          rules agreed with you during onboarding. We configure, test, and
-          monitor the agent; you approve how it sounds before it answers a real
-          customer.
+          Ring Relay sets up and operates an automated review request system for
+          your business. After a completed job, it sends your customer a request
+          to leave a Google review by text and email, with a follow-up, so you
+          collect more recent reviews. We configure, test, and monitor it, and
+          you approve how the messages sound before any go out.
         </p>
       </LegalSection>
 
-      <LegalSection title="3. Fees and the 90 day minimum">
+      <LegalSection title="3. Fees">
         <LegalList
           items={[
-            "A one time setup fee, payable before onboarding begins, covering configuration, calendar and CRM connection, number setup, and live testing.",
-            "A flat monthly retainer for your chosen tier, as published on the pricing page or agreed in writing. No per minute charges and no overage bills.",
-            "A 90 day minimum term from go live. After 90 days you may cancel with effect from the next billing cycle, no cancellation fee.",
+            "A flat monthly fee, as published on the pricing page or agreed in writing. No setup fee and no per-message charges.",
+            "Month to month, no minimum term. You may cancel anytime with effect from the next billing cycle, no cancellation fee.",
             "Fees are invoiced in advance and payable within 14 days. We may suspend the service for accounts more than 14 days overdue, after notice.",
-            "Tier changes take effect the next billing cycle. No new setup fee unless locations are added.",
+            "Any founding-customer or promotional pricing applies only for the period stated when you sign up.",
           ]}
         />
       </LegalSection>
 
       <LegalSection title="4. What we do not promise">
         <p>
-          The receptionist is an automated system. It is good, and we monitor
-          it, but no automated system is perfect. We do not guarantee that
-          every call will be answered, transcribed, or handled correctly, that
-          the service will be uninterrupted, or that any particular business
-          outcome (bookings, revenue, answer rates) will be achieved. The agent
-          never quotes prices or makes commitments on your behalf beyond the
-          booking rules you approve.
+          Ring Relay sends review requests to the customers you provide. It is
+          an automated system, and no automated system is perfect. We do not
+          guarantee that every message will be delivered, that any customer will
+          leave a review, that your ranking will improve, or that any particular
+          business outcome (reviews, rankings, calls, revenue) will be achieved.
+          We never write, fake, buy, or filter reviews, and we do not offer
+          incentives in exchange for reviews.
         </p>
       </LegalSection>
 
       <LegalSection title="5. Your responsibilities">
         <LegalList
           items={[
-            "Provide accurate business information (services, hours, service area, booking rules) and keep it current.",
-            "Use the service lawfully, including any call recording and telemarketing rules that apply to your business and region.",
-            "Not use the service to deceive callers, send spam, or handle categories of data we have not agreed to (for example medical or payment card data).",
-            "Tell your callers about call handling and recording where the law requires it.",
+            "Provide accurate business and customer information and keep it current.",
+            "Only add customers who actually did business with you, and who you have a lawful basis to contact by text and email.",
+            "Use the service lawfully, including any messaging and consent rules that apply to your business and region.",
+            "Not use the service to solicit fake or incentivized reviews, or to contact people who did not do business with you.",
           ]}
         />
       </LegalSection>
 
       <LegalSection title="6. Intellectual property">
         <p>
-          We own the Ring Relay platform, configurations, prompts, and tooling.
-          You own your business data: your customer details, bookings, call
-          summaries, and transcripts, and we process them only to provide the
-          service. On termination we will, on request, export your business
-          data and then delete it within 60 days, except where the law requires
-          longer retention.
+          We own the Ring Relay platform, configurations, and tooling. You own
+          your business data: your customer details and review activity, and we
+          process them only to provide the service. On termination we will, on
+          request, export your business data and then delete it within 60 days,
+          except where the law requires longer retention.
         </p>
       </LegalSection>
 
@@ -85,7 +82,7 @@ export default function TermsPage() {
           To the fullest extent the law allows: our total liability under these
           terms in any 12 month period is capped at the fees you paid us in
           that period. We are not liable for indirect or consequential losses,
-          including lost profits, lost bookings, or lost business
+          including lost profits, lost reviews, or lost business
           opportunities. Nothing in these terms excludes liability that cannot
           legally be excluded.
         </p>

@@ -34,9 +34,9 @@ const jetbrains = JetBrains_Mono({
 
 // TODO(phase 2): point metadataBase at the real production domain.
 const SITE_URL = "https://ringrelay.com";
-const TITLE = "Ring Relay: AI receptionist for home-services trades";
+const TITLE = "Ring Relay: Automatic Google reviews for HVAC and roofing";
 const DESCRIPTION =
-  "Stop losing jobs to missed calls. Ring Relay answers every call 24/7, books the appointment, and texts you the details, even when you're on a jobsite.";
+  "Get more 5-star Google reviews automatically after every job. Climb the Maps 3-pack and get more calls from the ads you already run. Built for HVAC and roofing pros. $97 a month.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -47,14 +47,14 @@ export const metadata: Metadata = {
   description: DESCRIPTION,
   applicationName: "Ring Relay",
   keywords: [
-    "AI receptionist",
-    "AI voice agent",
-    "answering service",
-    "HVAC",
-    "plumbing",
-    "water damage restoration",
-    "missed calls",
-    "appointment booking",
+    "Google reviews",
+    "review requests",
+    "get more reviews",
+    "HVAC marketing",
+    "roofing marketing",
+    "Google Maps ranking",
+    "local SEO",
+    "reputation management",
   ],
   openGraph: {
     type: "website",
