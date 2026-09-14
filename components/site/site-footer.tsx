@@ -38,6 +38,14 @@ export function SiteFooter() {
                 Product
               </div>
               <ul className="flex flex-col gap-3">
+                <li>
+                  <Link
+                    href="/demo"
+                    className="text-[15px] font-semibold text-acc-dim hover:text-acc"
+                  >
+                    See it work
+                  </Link>
+                </li>
                 {NAV_LINKS.filter((l) => l.href !== "/careers").map((l) => (
                   <li key={l.href}>
                     <Link

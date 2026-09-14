@@ -5,7 +5,7 @@ import { LegalPage, LegalSection, LegalList } from "@/components/site/legal-page
 export const metadata: Metadata = {
   title: "Privacy Policy",
   description:
-    "How Ring Relay collects, uses, and protects personal data, including the browser voice demo, contact forms, and job applications.",
+    "How Ring Relay collects, uses, and protects personal data from contact forms, job applications, and website visitors.",
 };
 
 // GDPR requires a genuine, identifiable data controller and a real contact
@@ -45,16 +45,13 @@ export default function PrivacyPage() {
               <Link href="/demo" className="font-bold text-acc-dim underline">
                 /demo
               </Link>{" "}
-              page uses your microphone. Speech is transcribed in your browser.
-              The text of the conversation is sent to our processors to generate
-              the receptionist&apos;s replies and voice. If you book a test
-              appointment in the demo, the details you give (name, phone number,
-              service, preferred time) are stored. Legal basis: consent, given
-              by starting the demo after the microphone prompt.
+              page is an interactive illustration that runs entirely in your
+              browser. It uses no microphone and collects nothing. Anything you
+              type there, such as a business name, is never sent to us or stored.
             </span>,
             <span key="c">
               <strong className="text-ink">Contact form.</strong> Name, business
-              name, email, phone, industry, and your message, used to respond to
+              name, email, phone, trade, and your message, used to respond to
               your demo request. Legal basis: taking steps at your request
               before entering a contract.
             </span>,
@@ -69,23 +66,18 @@ export default function PrivacyPage() {
         />
       </LegalSection>
 
-      <LegalSection title="3. The voice demo, in plain words">
+      <LegalSection title="3. The interactive demo, in plain words">
         <p>
-          The /demo page is a live AI receptionist that runs in your browser.
-          When you use it: your speech is converted to text by your browser.
-          That text is sent to Anthropic (Claude) to generate the reply, and
-          the reply text is sent to ElevenLabs to generate the voice you hear.
-          We do not store your audio. Conversation transcripts are not stored
-          by us beyond the browser session, except any booking you complete,
-          which we keep so we can show you the demo worked. Demo booking
-          records are deleted within 30 days.
+          The /demo page is a visual illustration of how Ring Relay works. It
+          runs entirely in your browser, uses no microphone, and sends nothing
+          to us. Any name you type is used only to personalize what you see on
+          screen and is never transmitted or saved.
         </p>
       </LegalSection>
 
       <LegalSection title="4. How long we keep data">
         <LegalList
           items={[
-            "Demo bookings and transcripts: up to 30 days, then deleted.",
             "Contact form submissions: up to 24 months after our last exchange.",
             "Job applications, including CVs: up to 12 months after the role closes, unless you are hired, in which case they move to your employment record. You can ask us to delete them sooner at any time.",
             "Cookie consent record: 12 months, after which we ask again.",
@@ -102,9 +94,8 @@ export default function PrivacyPage() {
         <LegalList
           items={[
             "Supabase (database, authentication, and file storage)",
-            "Vercel (website hosting)",
-            "Anthropic (AI text generation for the demo receptionist)",
-            "ElevenLabs (voice generation for the demo receptionist)",
+            "Vercel (website hosting and cookieless analytics)",
+            "Resend (sending transactional and recruitment emails)",
           ]}
         />
         <p>

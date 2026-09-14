@@ -50,13 +50,23 @@ export default function HomePage() {
             {HERO.sub}
           </p>
 
-          <div className="fade-4 mb-14 flex flex-col items-stretch gap-[12px] sm:flex-row sm:items-center">
+          <div className="fade-4 mb-8 flex flex-col items-stretch gap-[12px] sm:flex-row sm:items-center">
             <PrimaryCta href="/contact" className="w-full sm:w-auto">
               Book a demo
             </PrimaryCta>
             <SecondaryCta href="/how-it-works" className="w-full sm:w-auto">
               See how it works
             </SecondaryCta>
+          </div>
+
+          <div className="fade-4 mb-14">
+            <Link
+              href="/demo"
+              className="inline-flex items-center gap-[9px] text-[14.5px] font-semibold text-acc-dim hover:text-acc"
+            >
+              Try the interactive demo
+              <ArrowRight size={15} strokeWidth={2.4} />
+            </Link>
           </div>
 
           <div className="fade-5 flex flex-wrap items-center gap-x-[22px] gap-y-3 border-t border-line pt-[26px]">

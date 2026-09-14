@@ -40,9 +40,6 @@ Set in Vercel project settings (values from `.env.local.example`):
 - [ ] `NEXT_PUBLIC_SUPABASE_URL`
 - [ ] `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - [ ] `SUPABASE_SERVICE_ROLE_KEY` (server only, never exposed)
-- [ ] `ANTHROPIC_API_KEY`
-- [ ] `ELEVENLABS_API_KEY`
-- [ ] `ELEVENLABS_VOICE_ID`
 - [ ] `NEXT_PUBLIC_SITE_URL` set to the real domain
 - [ ] `RESEND_API_KEY`, `EMAIL_FROM`, `EMAIL_REPLY_TO` (see section 3a)
 
@@ -85,8 +82,8 @@ Without this, sends are skipped silently and logged. The app still works.
 - [ ] With analytics rejected: no request to `va.vercel-scripts.com` or
       `/_vercel/insights` in DevTools Network. With it accepted: the script
       loads
-- [ ] /demo: microphone works over HTTPS, the receptionist answers and books,
-      the booking appears in Supabase `demo_bookings`
+- [ ] /demo: the interactive review demo runs (type a business name, hit Run,
+      the request, review, and ranking climb animate). No API keys needed.
 - [ ] Contact form submits and the row appears in `contact_submissions`
 - [ ] /careers shows both roles; submit a test application WITH a CV; it
       appears in /admin/careers/applications and the CV downloads via the
@@ -105,4 +102,5 @@ Without this, sends are skipped silently and logged. The app still works.
   vendors enforce: these burn Anthropic and ElevenLabs credits per call.
   Watch usage after launch; add per IP limits before promoting the demo
   widely.
-- No admin view for demo bookings; they live in the `demo_bookings` table.
+- The old voice demo is gone, so the `demo_bookings` table (migration 0002)
+  is now unused. It is harmless to leave; drop it later if you want.
