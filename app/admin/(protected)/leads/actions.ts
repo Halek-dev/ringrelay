@@ -416,6 +416,7 @@ async function dispatchLeadEmails(
     subject: string;
     bodyText: string;
     cta?: EmailCta;
+    plain?: boolean;
   }[],
   touchType: TouchType,
 ): Promise<{ sent: number; failed: number; error?: string }> {
@@ -485,6 +486,7 @@ export async function sendBulkLeadEmail(input: {
       subject: substituteVars(input.subject, vars),
       bodyText: substituteVars(input.body, vars),
       cta: OUTREACH_CTA,
+      plain: true,
     };
   });
 
@@ -542,6 +544,7 @@ export async function sendPersonalizedOutreach(input: {
     subject: string;
     bodyText: string;
     cta?: EmailCta;
+    plain?: boolean;
   }[] = [];
 
   for (const l of leads as (LeadEmailRow & {
@@ -567,6 +570,7 @@ export async function sendPersonalizedOutreach(input: {
       subject: substituteVars(perLeadSubject || input.subject, vars),
       bodyText: substituteVars(message, vars),
       cta: OUTREACH_CTA,
+      plain: true,
     });
   }
 

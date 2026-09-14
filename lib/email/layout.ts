@@ -27,12 +27,12 @@ function escapeHtml(s: string): string {
 }
 
 /** Plain text with blank-line paragraphs and line breaks becomes safe HTML. */
-function textToHtml(text: string): string {
+function textToHtml(text: string, color = "#3f4a5a", gap = 16): string {
   return text
     .split(/\n{2,}/)
     .map(
       (para) =>
-        `<p style="margin:0 0 16px 0;font-size:15px;line-height:1.65;color:#3f4a5a;">${escapeHtml(
+        `<p style="margin:0 0 ${gap}px 0;font-size:15px;line-height:1.6;color:${color};">${escapeHtml(
           para.trim(),
         ).replace(/\n/g, "<br/>")}</p>`,
     )
@@ -49,8 +49,51 @@ export const OUTREACH_CTA: EmailCta = {
   url: `${SITE_URL}/book`,
 };
 
-/** Wrap rendered body text in the fixed Ring Relay email design. */
-export function renderEmailHtml(bodyText: string, cta?: EmailCta): string {
+export type RenderOpts = {
+  cta?: EmailCta;
+  // Plain, personal style for cold outreach: no colored header or button, so
+  // Gmail files it in Primary instead of Promotions. The bold branded style is
+  // for transactional mail (careers, booking confirmations).
+  plain?: boolean;
+};
+
+/**
+ * A near plain-text email that reads like a person typed it: no header band,
+ * no button, just the message, the booking link as a plain link, and a small
+ * sign-off. This is what keeps cold outreach out of the Promotions tab.
+ */
+function renderPlainEmailHtml(bodyText: string, cta?: EmailCta): string {
+  const content = textToHtml(bodyText, "#222222", 15);
+  const ctaLine = cta
+    ? `<p style="margin:18px 0 0 0;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#222222;">Grab a time here: <a href="${cta.url}" style="color:#1a56db;">${cta.label.toLowerCase()}</a></p>`
+    : "";
+  return `<!doctype html>
+<html>
+<body style="margin:0;padding:0;background-color:#ffffff;">
+  <div style="max-width:560px;margin:0 auto;padding:18px 16px;font-family:Arial,Helvetica,sans-serif;">
+    ${content}
+    ${ctaLine}
+    <p style="margin:20px 0 0 0;font-size:13px;line-height:1.6;color:#999999;">
+      Ring Relay, Little Rock, Arkansas. Reply STOP and I will take you off this list.
+    </p>
+  </div>
+</body>
+</html>`;
+}
+
+/** Wrap rendered body text in the Ring Relay email design. */
+export function renderEmailHtml(
+  bodyText: string,
+  opts?: EmailCta | RenderOpts,
+): string {
+  // Back-compat: an EmailCta may be passed directly as the second argument.
+  const o: RenderOpts = opts
+    ? "url" in opts
+      ? { cta: opts }
+      : opts
+    : {};
+  if (o.plain) return renderPlainEmailHtml(bodyText, o.cta);
+  const cta = o.cta;
   const content = textToHtml(bodyText);
   const ctaBlock = cta
     ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px 0 2px 0;"><tr>

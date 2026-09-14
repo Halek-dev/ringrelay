@@ -27,6 +27,7 @@ export async function sendEmail(input: {
   subject: string;
   bodyText: string;
   cta?: EmailCta;
+  plain?: boolean;
 }): Promise<SendResult> {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.EMAIL_FROM;
@@ -48,7 +49,7 @@ export async function sendEmail(input: {
         from,
         to: [input.to],
         subject: input.subject,
-        html: renderEmailHtml(input.bodyText, input.cta),
+        html: renderEmailHtml(input.bodyText, { cta: input.cta, plain: input.plain }),
         text: input.bodyText,
         ...(process.env.EMAIL_REPLY_TO
           ? { reply_to: process.env.EMAIL_REPLY_TO }
@@ -76,6 +77,7 @@ export type BatchItem = {
   subject: string;
   bodyText: string;
   cta?: EmailCta;
+  plain?: boolean;
 };
 
 /**
@@ -110,7 +112,7 @@ export async function sendEmailBatch(
       from,
       to: [m.to],
       subject: m.subject,
-      html: renderEmailHtml(m.bodyText, m.cta),
+      html: renderEmailHtml(m.bodyText, { cta: m.cta, plain: m.plain }),
       text: m.bodyText,
       ...(replyTo ? { reply_to: replyTo } : {}),
     }));

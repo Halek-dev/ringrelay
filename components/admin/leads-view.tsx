@@ -1138,6 +1138,32 @@ function firstNameOf(contact: string | null): string {
   return (contact ?? "").trim().split(/\s+/)[0] || "there";
 }
 
+// Personal, curiosity-led subject lines that land in Primary. No price, no big
+// numbers, no "$" (those get an email filed under Promotions or Spam).
+const SUBJECT_IDEAS = [
+  "quick question about {{business}}'s Google reviews",
+  "{{business}} on Google Maps",
+  "idea for {{business}}",
+  "your Google reviews",
+];
+
+function SubjectIdeas({ onPick }: { onPick: (s: string) => void }) {
+  return (
+    <div className="mt-[6px] flex flex-wrap gap-[6px]">
+      {SUBJECT_IDEAS.map((s) => (
+        <button
+          key={s}
+          type="button"
+          onClick={() => onPick(s)}
+          className="rounded-full border border-line2 bg-card2 px-[9px] py-[3px] text-[11.5px] text-body transition-colors hover:border-acc hover:text-acc-dim"
+        >
+          {s}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function PersonalizedOutreachDialog({
   open,
   onOpenChange,
@@ -1153,7 +1179,7 @@ function PersonalizedOutreachDialog({
   const { toast } = useToast();
   const [pending, startTransition] = useTransition();
   const [subject, setSubject] = useState(
-    "A quick idea for {{business}}'s Google reviews",
+    "quick question about {{business}}'s Google reviews",
   );
 
   // outreach_message is undefined until migration 0011 adds the column, so a
@@ -1264,6 +1290,7 @@ function PersonalizedOutreachDialog({
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
             />
+            <SubjectIdeas onPick={setSubject} />
           </label>
 
           {previewLead && (
@@ -1464,10 +1491,11 @@ function BulkEmailDialog({
               <span className="text-[12.5px] font-bold text-ink">Subject</span>
               <input
                 className={fieldCls}
-                placeholder="A quick idea for {{business}}'s Google reviews"
+                placeholder="quick question about {{business}}'s Google reviews"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
               />
+              <SubjectIdeas onPick={setSubject} />
             </label>
 
             <label className="flex flex-col gap-[6px]">
