@@ -18,9 +18,7 @@ import {
   Mail,
   Copy,
   Send,
-  Lock,
   Pencil,
-  Skull,
   Facebook,
   Linkedin,
   Instagram,
@@ -32,12 +30,11 @@ import {
   Upload,
   Reply,
 } from "lucide-react";
-import { LeadBadge, TierBadge, ProgressBar } from "@/components/admin/ui";
+import { LeadBadge, TierBadge } from "@/components/admin/ui";
 import { useToast } from "@/components/ui/toaster";
 import {
   createLead,
   deleteLead,
-  saveQualification,
   logTouch,
   importLeads,
   sendBulkLeadEmail,
@@ -69,22 +66,9 @@ import {
   type OutreachChannel,
   type OutreachLog,
   type OutreachTemplate,
-  type QualificationAnswers,
   type TouchType,
 } from "@/lib/db-types";
-import {
-  FUNNEL_STEPS,
-  TOTAL_STEPS,
-  MAX_SCORE,
-  computeScore,
-  computeTier,
-  deriveStatus,
-  killInfo,
-  scoreBreakdown,
-  answeredCount,
-  isComplete,
-  TIER_PLAN,
-} from "@/lib/qualification";
+import { GRADE_PLAN } from "@/lib/qualification";
 import { cn } from "@/lib/utils";
 
 type View = "table" | "board";
@@ -207,7 +191,7 @@ export function LeadsView({
           </h1>
           <p className="mt-1 text-[14.5px] text-body">
             {leads.length} prospects, sorted hottest first. Import a list or add
-            one, then open a lead to run the qualification funnel.
+            one. Grades (A / B / C) come straight from your CSV.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -375,7 +359,6 @@ export function LeadsView({
             {activeLead && (
               <LeadDrawer
                 lead={activeLead}
-                templates={templates}
                 touches={touchesByLead[activeLead.id] ?? []}
               />
             )}
@@ -392,8 +375,7 @@ const COLUMNS: { label: string; key?: SortKey }[] = [
   { label: "Business", key: "business_name" },
   { label: "Contact", key: "contact_name" },
   { label: "Industry", key: "industry" },
-  { label: "Score", key: "score" },
-  { label: "Tier", key: "tier" },
+  { label: "Grade", key: "tier" },
   { label: "Status", key: "status" },
 ];
 
@@ -563,13 +545,6 @@ function LeadRow({
         {INDUSTRY_LABEL[lead.industry]}
       </td>
       <td className="px-5 py-[14px]">
-        {lead.score == null ? (
-          <span className="text-[13.5px] text-mute">-</span>
-        ) : (
-          <span className="font-mono text-[14px] font-bold text-ink">{lead.score}</span>
-        )}
-      </td>
-      <td className="px-5 py-[14px]">
         {lead.tier ? <TierBadge tier={lead.tier} /> : <span className="text-mute">-</span>}
       </td>
       <td className="px-5 py-[14px]">
@@ -625,7 +600,7 @@ function LeadBoard({ leads, onOpen }: { leads: Lead[]; onOpen: (l: Lead) => void
                   </div>
                   <div className="mt-2 flex items-center justify-between text-[12px] text-mute">
                     <span>{INDUSTRY_LABEL[l.industry]}</span>
-                    <span>{l.score != null ? `Score ${l.score}` : (l.city ?? "")}</span>
+                    <span>{l.city ?? ""}</span>
                   </div>
                 </button>
               ))}
@@ -644,46 +619,10 @@ function LeadBoard({ leads, onOpen }: { leads: Lead[]; onOpen: (l: Lead) => void
 
 /* ------------------------- lead detail drawer ------------------------- */
 
-function LeadDrawer({
-  lead,
-  templates,
-  touches,
-}: {
-  lead: Lead;
-  templates: OutreachTemplate[];
-  touches: OutreachLog[];
-}) {
-  const router = useRouter();
-  const { toast } = useToast();
-  const [pending, startTransition] = useTransition();
-  const [answers, setAnswers] = useState<QualificationAnswers>(lead.qualification ?? {});
-  const [editing, setEditing] = useState<number | null>(null);
-
-  const kill = killInfo(answers);
-  const score = computeScore(answers);
-  const tier = computeTier(score);
-  const status = deriveStatus(answers);
-  const answered = answeredCount(answers);
-  const complete = isComplete(answers);
-  const firstUnanswered = FUNNEL_STEPS.findIndex((s) => !answers[s.key]);
-  const expanded = editing !== null ? editing : kill ? -1 : firstUnanswered;
-
-  function choose(stepKey: string, value: string) {
-    const next: QualificationAnswers = { ...answers, [stepKey]: value };
-    setAnswers(next);
-    setEditing(null);
-    startTransition(async () => {
-      const res = await saveQualification(lead.id, next);
-      if (!res.ok) {
-        setAnswers(answers);
-        toast({ variant: "info", title: "Couldn't save", description: res.error });
-        return;
-      }
-      router.refresh();
-    });
-  }
-
-  const progressStep = complete || kill ? TOTAL_STEPS : Math.min(answered + 1, TOTAL_STEPS);
+function LeadDrawer({ lead, touches }: { lead: Lead; touches: OutreachLog[] }) {
+  const extras = lead.qualification ?? {};
+  const grade = lead.tier;
+  const plan = grade ? GRADE_PLAN[grade] : null;
 
   return (
     <div>
@@ -693,8 +632,9 @@ function LeadDrawer({
           <Dialog.Title className="font-display text-[20px] font-extrabold tracking-[-0.02em] text-ink">
             {lead.business_name}
           </Dialog.Title>
-          <p className="mt-[2px] text-[13.5px] text-body">
+          <p className="mt-[2px] flex flex-wrap items-center gap-2 text-[13.5px] text-body">
             {lead.contact_name ?? "-"} · {INDUSTRY_LABEL[lead.industry]}
+            {grade && <TierBadge tier={grade} />}
           </p>
         </div>
         <Dialog.Close className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-line2 text-mute hover:text-ink">
@@ -718,8 +658,20 @@ function LeadDrawer({
             <Mail size={14} /> {lead.email}
           </a>
         )}
+        {extras.website && (
+          <a
+            href={extras.website.startsWith("http") ? extras.website : `https://${extras.website}`}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 text-[13.5px] text-acc-dim hover:text-acc"
+          >
+            <Globe size={14} /> <span className="truncate">{extras.website}</span>
+            <ExternalLink size={11} className="shrink-0" />
+          </a>
+        )}
         <div className="flex flex-wrap gap-x-5 gap-y-1 text-[13px] text-mute">
           {lead.city && <span>{lead.city}</span>}
+          {extras.country && <span>{extras.country}</span>}
           {lead.source && <span>Source: {lead.source}</span>}
         </div>
         {lead.notes && (
@@ -729,8 +681,18 @@ function LeadDrawer({
         )}
       </div>
 
-      {/* Personalized outreach message (imported from the CSV) */}
-      {lead.outreach_message?.trim() && (
+      {/* Grade + what to do */}
+      {plan && (
+        <div className="border-b border-line px-6 py-4">
+          <div className="rounded-[12px] border border-acc/30 bg-acc/[0.06] px-3 py-3">
+            <div className="text-[13.5px] font-bold text-acc-dim">{plan.headline}</div>
+            <p className="mt-[2px] text-[13px] leading-[1.5] text-body">{plan.action}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Personalized outreach (imported from the CSV) */}
+      {(lead.outreach_message?.trim() || extras.subject) && (
         <div className="border-b border-line px-6 py-4">
           <div className="mb-2 flex items-center gap-2">
             <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-mute">
@@ -740,262 +702,22 @@ function LeadDrawer({
               sent via Send outreach
             </span>
           </div>
-          <p className="whitespace-pre-wrap rounded-[10px] border border-line bg-panel px-3 py-2 text-[13px] leading-[1.55] text-body">
-            {lead.outreach_message}
-          </p>
-        </div>
-      )}
-
-      {/* Funnel */}
-      <div className="border-b border-line px-6 py-5">
-        <div className="mb-3 flex items-center justify-between">
-          <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-mute">
-            Qualification
-          </span>
-          <span className="font-mono text-[12px] text-mute">
-            Step {progressStep} of {TOTAL_STEPS}
-          </span>
-        </div>
-
-        <div className="flex flex-col gap-2">
-          {FUNNEL_STEPS.map((step, i) => {
-            const value = answers[step.key];
-            const chosen = step.outcomes.find((o) => o.value === value);
-            const isKilledHere = kill && kill.step === step.step;
-            const blocked = kill ? step.step > kill.step : false;
-            const isExpanded = expanded === i;
-
-            if (blocked) {
-              return (
-                <div
-                  key={step.key}
-                  className="flex items-center gap-2 rounded-[12px] border border-line bg-panel/50 px-3 py-2 text-[13px] text-mute"
-                >
-                  <Lock size={13} /> {step.step}. {step.title}
-                  <span className="ml-auto text-[11px]">skipped</span>
-                </div>
-              );
-            }
-
-            if (chosen && !isExpanded) {
-              return (
-                <button
-                  key={step.key}
-                  type="button"
-                  onClick={() => setEditing(i)}
-                  className="flex items-center gap-2 rounded-[12px] border border-line2 bg-card2 px-3 py-2 text-left"
-                >
-                  <span
-                    className={cn(
-                      "grid h-5 w-5 shrink-0 place-items-center rounded-full",
-                      isKilledHere ? "bg-ink text-bg" : "bg-ok text-white",
-                    )}
-                  >
-                    {isKilledHere ? <Skull size={12} /> : <Check size={12} strokeWidth={3} />}
-                  </span>
-                  <span className="text-[13.5px] font-bold text-ink">
-                    {step.step}. {step.title}
-                  </span>
-                  <span className="ml-auto flex items-center gap-2 text-[12.5px] text-body">
-                    {chosen.label}
-                    <Pencil size={12} className="text-mute" />
-                  </span>
-                </button>
-              );
-            }
-
-            if (isExpanded) {
-              return (
-                <div
-                  key={step.key}
-                  className="rounded-[12px] border-[1.5px] border-acc/50 bg-card p-3"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-[11px] font-semibold text-acc">
-                      Step {step.step}
-                    </span>
-                    <span className="text-[13.5px] font-bold text-ink">{step.title}</span>
-                  </div>
-                  <p className="mt-1 text-[13px] leading-[1.45] text-body">
-                    {step.instruction}
-                  </p>
-                  <div className="mt-3 flex flex-col gap-2">
-                    {step.outcomes.map((o) => (
-                      <button
-                        key={o.value}
-                        type="button"
-                        disabled={pending}
-                        onClick={() => choose(step.key, o.value)}
-                        className={cn(
-                          "flex items-center justify-between gap-2 rounded-[10px] border px-3 py-[9px] text-left text-[13px] font-semibold transition-colors disabled:opacity-60",
-                          o.kill
-                            ? "border-line2 text-mute hover:border-ink hover:text-ink"
-                            : "border-line2 text-ink hover:border-acc/50 hover:bg-ai-bg2",
-                          value === o.value && !o.kill && "border-ok bg-ok/[0.08]",
-                          value === o.value && o.kill && "border-ink bg-panel",
-                        )}
-                      >
-                        <span className="flex items-center gap-2">
-                          {o.kill && <Skull size={14} className="text-mute" />}
-                          {o.label}
-                        </span>
-                        {o.points > 0 && (
-                          <span className="font-mono text-[11px] text-mute">+{o.points}</span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              );
-            }
-
-            // future, dimmed
-            return (
-              <div
-                key={step.key}
-                className="flex items-center gap-2 rounded-[12px] border border-line bg-card px-3 py-2 text-[13px] text-mute"
-              >
-                <span className="grid h-5 w-5 place-items-center rounded-full border border-line2 font-mono text-[10px]">
-                  {step.step}
-                </span>
-                {step.title}
-              </div>
-            );
-          })}
-        </div>
-
-        {kill && (
-          <div className="mt-3 rounded-[12px] border border-line2 bg-panel px-3 py-3">
-            <div className="flex items-center gap-2 text-[13.5px] font-bold text-ink">
-              <Skull size={15} /> Killed at step {kill.step}: {killReasonShort(kill.reason)}
-            </div>
-            <p className="mt-1 text-[12.5px] leading-[1.5] text-body">
-              Killing leads early is the system working. Most leads should not
-              pass. Tap the step above to change your answer if this was a
-              mistake.
+          {extras.subject && (
+            <p className="mb-1 text-[13px] font-bold text-ink">{extras.subject}</p>
+          )}
+          {lead.outreach_message?.trim() && (
+            <p className="whitespace-pre-wrap rounded-[10px] border border-line bg-panel px-3 py-2 text-[13px] leading-[1.55] text-body">
+              {lead.outreach_message}
             </p>
-          </div>
-        )}
-      </div>
-
-      {/* Result: score + recommendation */}
-      {complete && !kill && (
-        <ResultPanel
-          answers={answers}
-          score={score}
-          tier={tier}
-          status={status}
-          templates={templates}
-        />
+          )}
+        </div>
       )}
 
       {/* Find a way in */}
       <ContactFinderPanel lead={lead} />
 
       {/* Log touch + history */}
-      <LogTouchPanel leadId={lead.id} touches={touches} disabled={status === "killed"} />
-    </div>
-  );
-}
-
-function ResultPanel({
-  answers,
-  score,
-  tier,
-  status,
-  templates,
-}: {
-  answers: QualificationAnswers;
-  score: number;
-  tier: LeadTier;
-  status: LeadStatus;
-  templates: OutreachTemplate[];
-}) {
-  const breakdown = scoreBreakdown(answers);
-  const plan = TIER_PLAN[tier];
-  const rec = plan.templateHint
-    ? templates.find((t) => t.name.toLowerCase().includes(plan.templateHint!))
-    : undefined;
-
-  return (
-    <div className="border-b border-line px-6 py-5">
-      <div className="mb-2 flex items-center justify-between">
-        <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-mute">
-          Score
-        </span>
-        <LeadBadge status={status} />
-      </div>
-      <div className="flex items-baseline gap-3">
-        <span className="font-display text-[34px] font-extrabold leading-none tracking-[-0.02em] text-ink">
-          {score}
-          <span className="text-[16px] font-bold text-mute">/{MAX_SCORE}</span>
-        </span>
-        <TierBadge tier={tier} />
-      </div>
-
-      {/* transparent breakdown */}
-      <div className="mt-3 flex flex-col gap-1 rounded-[10px] border border-line bg-panel px-3 py-2">
-        {breakdown.length === 0 ? (
-          <div className="text-[12.5px] text-body">
-            No positive signals scored. This is a low-priority lead.
-          </div>
-        ) : (
-          breakdown.map((b, i) => (
-            <div key={i} className="flex items-center justify-between text-[12.5px]">
-              <span className="text-body">{b.label}</span>
-              <span className="font-mono font-semibold text-ink">+{b.points}</span>
-            </div>
-          ))
-        )}
-        <div className="mt-1 flex items-center justify-between border-t border-line pt-1 text-[12.5px] font-bold">
-          <span className="text-ink">Total</span>
-          <span className="font-mono text-ink">{score}</span>
-        </div>
-      </div>
-
-      {/* recommendation */}
-      <div className="mt-4 rounded-[12px] border border-acc/30 bg-acc/[0.06] px-3 py-3">
-        <div className="text-[13.5px] font-bold text-acc-dim">{plan.headline}</div>
-        <p className="mt-[2px] text-[13px] text-body">{plan.action}</p>
-      </div>
-
-      {rec && <RecommendedTemplate template={rec} />}
-    </div>
-  );
-}
-
-function RecommendedTemplate({ template }: { template: OutreachTemplate }) {
-  const [copied, setCopied] = useState(false);
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(template.body);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      /* clipboard unavailable */
-    }
-  }
-  return (
-    <div className="mt-3 rounded-[12px] border border-line2 bg-card2 p-3">
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="text-[12.5px] font-bold text-ink">{template.name}</span>
-        <button
-          type="button"
-          onClick={copy}
-          className={cn(
-            "inline-flex items-center gap-[5px] rounded-full border px-3 py-[5px] text-[12px] font-bold transition-colors",
-            copied
-              ? "border-ok/40 bg-ok/[0.08] text-ok"
-              : "border-line2 text-body hover:border-acc hover:text-acc",
-          )}
-        >
-          {copied ? <Check size={13} strokeWidth={2.6} /> : <Copy size={13} />}
-          {copied ? "Copied" : "Copy"}
-        </button>
-      </div>
-      <p className="whitespace-pre-wrap text-[12.5px] leading-[1.55] text-bubble-ink">
-        {template.body}
-      </p>
+      <LogTouchPanel leadId={lead.id} touches={touches} disabled={false} />
     </div>
   );
 }
@@ -1097,10 +819,6 @@ function LogTouchPanel({
       )}
     </div>
   );
-}
-
-function killReasonShort(reason: string): string {
-  return reason.replace(/^Kill:\s*/, "");
 }
 
 /* ------------------------- find a way in (crawler) ------------------------- */
@@ -1866,6 +1584,7 @@ function ImportLeadsDialog() {
           [
             res.data.skipped > 0 ? `${res.data.skipped} duplicates skipped` : "",
             res.data.failed > 0 ? `${res.data.failed} rows failed` : "",
+            res.data.ungraded > 0 ? `${res.data.ungraded} ungraded` : "",
           ]
             .filter(Boolean)
             .join(", ") || "All rows added.",
@@ -1902,14 +1621,16 @@ function ImportLeadsDialog() {
             </Dialog.Close>
           </div>
           <p className="mb-4 text-[13px] leading-[1.5] text-body">
-            First row is the header. We recognize columns like{" "}
+            First row is the header. We pull{" "}
             <span className="font-semibold text-ink">
-              business, contact, email, phone, city, state, industry, source,
-              notes
-            </span>
-            . Each lead needs a business name and at least an email or a phone.
-            Duplicates of a lead you already have (same email or phone) are
-            skipped.
+              lead_id, tier, company, owner_name, email, website, country,
+              subject, message
+            </span>{" "}
+            (and trade / phone if present) and ignore the rest. The{" "}
+            <span className="font-semibold text-ink">tier</span> column sets the
+            grade (A / A-form &rarr; A, B, C). Each lead needs a company and an
+            email or phone. Duplicates you already have (same lead_id, email, or
+            phone) are skipped.
           </p>
 
           <div className="flex flex-col gap-3">
@@ -1941,7 +1662,7 @@ function ImportLeadsDialog() {
                 setText(e.target.value);
                 if (fileName) setFileName("");
               }}
-              placeholder={"business,contact,email,phone,city,industry\nSummit Heating & Air,Dave K.,dave@summitair.com,(555) 010-1234,Denver,HVAC"}
+              placeholder={"lead_id,tier,company,owner_name,email,website,subject,message\nL-001,A,Summit Heating & Air,Dave K.,dave@summitair.com,summitair.com,Quick idea for your Google reviews,\"Hi Dave, ...\""}
               className="w-full resize-y rounded-[10px] border-[1.5px] border-line2 bg-card2 px-[13px] py-[10px] font-mono text-[12.5px] leading-[1.5] text-ink placeholder:text-mute"
             />
 
@@ -1956,6 +1677,9 @@ function ImportLeadsDialog() {
                   )}
                   {result.failed > 0 && (
                     <span className="text-body">{result.failed} rows failed</span>
+                  )}
+                  {result.ungraded > 0 && (
+                    <span className="text-body">{result.ungraded} ungraded</span>
                   )}
                 </div>
                 {result.errors.length > 0 && (
@@ -2084,8 +1808,8 @@ function AddLeadDialog() {
             </Dialog.Close>
           </div>
           <p className="mb-5 text-[13px] text-body">
-            Just the basics. You&apos;ll qualify and score it from the lead&apos;s
-            detail view.
+            Just the basics. Most leads come in graded from a CSV import; add one
+            here by hand when you need to.
           </p>
           <form onSubmit={submit} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Business" required className="sm:col-span-2">

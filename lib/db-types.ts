@@ -24,10 +24,20 @@ export type LeadStatus =
   | "won"
   | "lost";
 
-// Funnel outputs
+// Lead grade (from the CSV tier column), stored on the tier enum.
 export type LeadTier = "hot" | "warm" | "cool" | "skip";
-// Each key is a funnel step; the value is the chosen outcome id for that step.
-export type QualificationAnswers = Partial<Record<string, string>>;
+
+// Extra per-lead fields pulled from the import CSV that have no dedicated
+// column of their own. Stored in the lead's `qualification` JSON field, which
+// the old qualification funnel used to own and is now free for this.
+export type LeadExtras = {
+  external_id?: string; // the CSV's own lead_id, used for dedupe on re-import
+  country?: string;
+  website?: string;
+  subject?: string; // the personalized email subject for this lead
+  trade?: string; // raw trade text from the CSV, for reference
+};
+export type QualificationAnswers = LeadExtras & Partial<Record<string, string>>;
 
 // Outreach log
 export type TouchType = "first_touch" | "follow_up_1" | "follow_up_2";
@@ -290,11 +300,14 @@ export const LEAD_STATUS_ORDER: LeadStatus[] = [
   "killed",
 ];
 
+// Leads are graded A / B / C in the imported CSV. The internal enum stays
+// hot / warm / cool so existing colors and sorting keep working; these labels
+// are the grade the user actually sees.
 export const TIER_LABEL: Record<LeadTier, string> = {
-  hot: "Hot",
-  warm: "Warm",
-  cool: "Cool",
-  skip: "Skip",
+  hot: "A",
+  warm: "B",
+  cool: "C",
+  skip: "-",
 };
 
 export const TOUCH_TYPE_LABEL: Record<TouchType, string> = {

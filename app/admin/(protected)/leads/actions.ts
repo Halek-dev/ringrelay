@@ -13,18 +13,12 @@ import type {
   QualificationAnswers,
   TouchType,
 } from "@/lib/db-types";
-import {
-  computeScore,
-  computeTier,
-  deriveStatus,
-  killInfo,
-} from "@/lib/qualification";
+import { parseCsvTier, TIER_RANK } from "@/lib/qualification";
 import { parseCsv } from "@/lib/csv";
 import { sendEmailBatch } from "@/lib/email/send";
 import { substituteVars, type EmailVars } from "@/lib/email/layout";
 
-// Add captures the basics only. Status is NOT set here; new leads always
-// start as "new" and the qualification funnel drives status from there.
+// Add captures the basics only. New leads always start as "new".
 export type NewLeadInput = {
   business_name: string;
   contact_name?: string;
@@ -56,7 +50,6 @@ export async function createLead(
       source: input.source?.trim() || null,
       notes: input.notes?.trim() || null,
       status: "new",
-      next_action: "Run qualification funnel",
       owner_id: profile.id,
     })
     .select("*")
@@ -66,44 +59,6 @@ export async function createLead(
   revalidatePath("/admin/leads");
   revalidatePath("/admin");
   return ok(data as Lead);
-}
-
-/**
- * Save the qualification-funnel answers for a lead. Recomputes score, tier, and
- * the funnel-driven status server-side (never trust client-computed values) and
- * writes them back so the list can sort hottest-first.
- */
-export async function saveQualification(
-  leadId: string,
-  answers: QualificationAnswers,
-): Promise<ActionResult<{ score: number; tier: LeadTier; status: LeadStatus }>> {
-  await assertProfile();
-  const supabase = createClient();
-
-  // Score and status are always recomputed server-side, never trusted from
-  // the client, so a lead's tier is reproducible from its stored answers.
-  const score = computeScore(answers);
-  const tier = computeTier(score);
-  const status = deriveStatus(answers);
-  const kill = killInfo(answers);
-
-  const { error } = await supabase
-    .from("leads")
-    .update({
-      qualification: answers,
-      score,
-      tier,
-      status,
-      killed_at_step: kill?.step ?? null,
-      kill_reason: kill?.reason ?? null,
-      last_touch_at: new Date().toISOString(),
-    })
-    .eq("id", leadId);
-
-  if (error) return fail(error.message);
-  revalidatePath("/admin/leads");
-  revalidatePath("/admin");
-  return ok({ score, tier, status });
 }
 
 /**
@@ -192,18 +147,22 @@ export async function deleteLead(id: string): Promise<ActionResult> {
 
 /* --------------------------- CSV import --------------------------- */
 
-// Header aliases so a list exported from Sheets, Apollo, or a scrape imports
-// without the user renaming columns first. All matched case-insensitively.
+// Header aliases so a graded prospect list imports without the user renaming
+// columns first. Matched case-insensitively. The list of fields is exactly what
+// we pull out of a wide CSV: identity, contact, grade, and the personalized
+// email. Everything else in the file is ignored.
 const COLUMN_ALIASES: Record<string, string[]> = {
-  business: ["business", "business name", "business_name", "company", "company name", "name", "org", "organization"],
-  contact: ["contact", "contact name", "contact_name", "owner", "owner name", "first name", "full name", "person"],
+  business: ["company", "business", "business name", "business_name", "company name", "name", "org", "organization"],
+  contact: ["owner_name", "owner name", "owner", "contact", "contact name", "contact_name", "full name", "person"],
   email: ["email", "email address", "e-mail", "emails", "work email"],
   phone: ["phone", "phone number", "telephone", "tel", "mobile", "cell"],
-  city: ["city", "town"],
-  state: ["state", "region", "province"],
-  industry: ["industry", "trade", "category", "type"],
-  source: ["source", "lead source", "list"],
-  notes: ["notes", "note", "comment", "comments"],
+  city: ["city_region", "city region", "city", "town", "region"],
+  industry: ["trade", "industry", "category", "type"],
+  source: ["channel", "source", "lead source", "list"],
+  tier: ["tier", "grade", "rating", "score"],
+  country: ["country"],
+  website: ["website", "url", "site", "web", "domain", "homepage"],
+  subject: ["subject", "email subject", "subject line"],
   message: [
     "message",
     "outreach",
@@ -211,9 +170,10 @@ const COLUMN_ALIASES: Record<string, string[]> = {
     "personalized message",
     "personalised message",
     "pitch",
-    "first touch",
     "email body",
+    "body",
   ],
+  external_id: ["lead_id", "lead id", "id", "external_id"],
 };
 
 function normEmail(v: string): string {
@@ -225,7 +185,7 @@ function normPhone(v: string): string {
   return v.replace(/\D/g, "");
 }
 
-/** Map a free-text industry cell onto the LeadIndustry enum; default "other". */
+/** Map a free-text trade cell onto the LeadIndustry enum; default "other". */
 function normIndustry(v: string): LeadIndustry {
   const s = v.trim().toLowerCase();
   if (!s) return "other";
@@ -242,16 +202,18 @@ function normIndustry(v: string): LeadIndustry {
 export type ImportResult = {
   imported: number;
   skipped: number; // duplicates of a lead we already have
-  failed: number; // rows with no business name, or no email and no phone
+  failed: number; // rows with no company, or no email and no phone
+  ungraded: number; // imported, but the tier cell was blank or unrecognized
   errors: string[]; // first few human-readable reasons, for the toast
 };
 
 /**
- * Import a prospect list from raw CSV text. Requires a header row with at least
- * a business column; every lead also needs an email or a phone (a way to reach
- * them). Rows that duplicate an existing lead by email or phone are skipped, so
- * re-importing an updated list is safe. New leads land as "new", ready for the
- * qualification funnel.
+ * Import a graded prospect list from raw CSV text. It pulls exactly the fields
+ * the lead needs (company, owner, email, website, country, grade, subject,
+ * message) and ignores the rest of a wide export. The grade comes from the CSV
+ * "tier" column (A / A-form -> A, B, C); there is no funnel. Rows that duplicate
+ * an existing lead (by CSV lead_id, then email, then phone) are skipped, so
+ * re-importing an updated list is safe.
  */
 export async function importLeads(
   csvText: string,
@@ -271,51 +233,62 @@ export async function importLeads(
     email: colOf("email"),
     phone: colOf("phone"),
     city: colOf("city"),
-    state: colOf("state"),
     industry: colOf("industry"),
     source: colOf("source"),
-    notes: colOf("notes"),
+    tier: colOf("tier"),
+    country: colOf("country"),
+    website: colOf("website"),
+    subject: colOf("subject"),
     message: colOf("message"),
+    external_id: colOf("external_id"),
   };
   if (col.business < 0)
     return fail(
-      'No business column found. The header row needs a column like "business" or "company".',
+      'No company column found. The header row needs a column like "company" or "business".',
     );
 
   const supabase = createClient();
 
-  // Dedupe against what we already hold, by email and by phone.
-  const { data: existing } = await supabase.from("leads").select("email, phone");
+  // Dedupe against what we already hold: by the CSV's own lead_id (stored in
+  // qualification.external_id), then email, then phone.
+  const { data: existing } = await supabase
+    .from("leads")
+    .select("email, phone, qualification");
   const seenEmail = new Set<string>();
   const seenPhone = new Set<string>();
-  for (const e of (existing ?? []) as { email: string | null; phone: string | null }[]) {
+  const seenExtId = new Set<string>();
+  for (const e of (existing ?? []) as {
+    email: string | null;
+    phone: string | null;
+    qualification: QualificationAnswers | null;
+  }[]) {
     if (e.email) seenEmail.add(normEmail(e.email));
     if (e.phone) seenPhone.add(normPhone(e.phone));
+    const extId = e.qualification?.external_id;
+    if (extId) seenExtId.add(extId.trim().toLowerCase());
   }
 
   type InsertRow = {
     business_name: string;
     contact_name: string | null;
+    owner_name: string | null;
     email: string | null;
     phone: string | null;
     city: string | null;
-    state: string | null;
     industry: LeadIndustry;
     source: string;
-    notes: string | null;
     status: LeadStatus;
-    next_action: string;
+    tier: LeadTier | null;
+    score: number | null;
+    outreach_message: string | null;
+    qualification: QualificationAnswers;
     owner_id: string;
-    outreach_message?: string | null;
   };
-  // Only touch the outreach_message column when the file actually carries a
-  // message column, so a plain import still works before migration 0011 adds
-  // the column.
-  const hasMessageCol = col.message >= 0;
 
   const toInsert: InsertRow[] = [];
   let skipped = 0;
   let failed = 0;
+  let ungraded = 0;
   const errors: string[] = [];
   const pushError = (msg: string) => {
     if (errors.length < 5) errors.push(msg);
@@ -326,7 +299,7 @@ export async function importLeads(
     const business = cell(col.business);
     if (!business) {
       failed++;
-      pushError(`Row ${r + 1}: no business name.`);
+      pushError(`Row ${r + 1}: no company name.`);
       continue;
     }
 
@@ -339,29 +312,48 @@ export async function importLeads(
       continue;
     }
 
+    const extId = cell(col.external_id);
     const en = email ? normEmail(email) : "";
     const pn = phone ? normPhone(phone) : "";
-    if ((en && seenEmail.has(en)) || (pn && seenPhone.has(pn))) {
+    const xid = extId ? extId.toLowerCase() : "";
+    if (
+      (xid && seenExtId.has(xid)) ||
+      (en && seenEmail.has(en)) ||
+      (pn && seenPhone.has(pn))
+    ) {
       skipped++;
       continue;
     }
+    if (xid) seenExtId.add(xid);
     if (en) seenEmail.add(en);
     if (pn) seenPhone.add(pn);
 
+    const tier = parseCsvTier(cell(col.tier));
+    if (!tier) ungraded++;
+
+    const owner = cell(col.contact);
+    const extras: QualificationAnswers = {};
+    if (extId) extras.external_id = extId;
+    if (cell(col.country)) extras.country = cell(col.country);
+    if (cell(col.website)) extras.website = cell(col.website);
+    if (cell(col.subject)) extras.subject = cell(col.subject);
+    if (cell(col.industry)) extras.trade = cell(col.industry);
+
     toInsert.push({
       business_name: business,
-      contact_name: cell(col.contact) || null,
+      contact_name: owner || null,
+      owner_name: owner || null,
       email: email || null,
       phone: phone || null,
       city: cell(col.city) || null,
-      state: cell(col.state) || null,
       industry: normIndustry(cell(col.industry)),
       source: cell(col.source) || "CSV import",
-      notes: cell(col.notes) || null,
       status: "new",
-      next_action: "Run qualification funnel",
+      tier,
+      score: tier ? TIER_RANK[tier] : null,
+      outreach_message: cell(col.message) || null,
+      qualification: extras,
       owner_id: profile.id,
-      ...(hasMessageCol ? { outreach_message: cell(col.message) || null } : {}),
     });
   }
 
@@ -376,7 +368,7 @@ export async function importLeads(
     revalidatePath("/admin");
   }
 
-  return ok({ imported: toInsert.length, skipped, failed, errors });
+  return ok({ imported: toInsert.length, skipped, failed, ungraded, errors });
 }
 
 /* --------------------------- bulk outreach email --------------------------- */
@@ -522,16 +514,10 @@ export async function sendPersonalizedOutreach(input: {
   const { data: leads, error } = await supabase
     .from("leads")
     .select(
-      "id, business_name, contact_name, email, city, state, outreach_message",
+      "id, business_name, contact_name, email, city, state, outreach_message, qualification",
     )
     .in("id", input.leadIds);
-  if (error) {
-    if (error.code === "42703")
-      return fail(
-        "Personalized outreach needs migration 0011 (the outreach_message column). Run it, then try again.",
-      );
-    return fail(error.message);
-  }
+  if (error) return fail(error.message);
   if (!leads || leads.length === 0) return fail("No leads found.");
 
   const sender = profile.full_name?.trim() || "the Ring Relay team";
@@ -539,7 +525,10 @@ export async function sendPersonalizedOutreach(input: {
   let skippedNoMessage = 0;
   const items: { ref: string; to: string; subject: string; bodyText: string }[] = [];
 
-  for (const l of leads as (LeadEmailRow & { outreach_message: string | null })[]) {
+  for (const l of leads as (LeadEmailRow & {
+    outreach_message: string | null;
+    qualification: QualificationAnswers | null;
+  })[]) {
     const message = l.outreach_message?.trim();
     if (!l.email?.trim()) {
       skippedNoEmail++;
@@ -549,11 +538,14 @@ export async function sendPersonalizedOutreach(input: {
       skippedNoMessage++;
       continue;
     }
+    // Prefer the lead's own subject from the CSV; the dialog's subject is the
+    // fallback for any lead that did not carry one.
+    const perLeadSubject = l.qualification?.subject?.trim();
     const vars = leadVars(l, sender);
     items.push({
       ref: l.id,
       to: l.email,
-      subject: substituteVars(input.subject, vars),
+      subject: substituteVars(perLeadSubject || input.subject, vars),
       bodyText: substituteVars(message, vars),
     });
   }
