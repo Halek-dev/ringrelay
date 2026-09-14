@@ -29,7 +29,11 @@ project (skip any already applied):
 - [ ] `0008_careers_team.sql` (also creates the `cvs` and `team-photos`
       storage buckets and seeds the two job postings)
 - [ ] `0009_email_templates.sql` (seeds the three editable email templates)
-- [ ] Run `supabase/seed.sql` (outreach templates)
+- [ ] `0010_review_outreach_templates.sql` (replaces any pre-pivot receptionist
+      outreach copy with the review templates; safe on a fresh or existing DB)
+- [ ] Run `supabase/seed.sql` (outreach templates; only inserts the review
+      templates on a fresh DB. On a database seeded before the pivot, migration
+      0010 above is what corrects the templates.)
 - [ ] Verify in Storage: `cvs` bucket is PRIVATE, `team-photos` is public
 - [ ] Create the owner account and confirm `profiles.role = 'owner'`
 
