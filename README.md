@@ -115,7 +115,7 @@ RLS is enabled on every table. Highlights:
 | Dashboard KPIs / activity | computed from `leads` + `clients` |
 | Today's goals | derived from real rows: leads created, touches in `outreach_log`, and leads whose status moved forward today |
 | Daily plan + streak | `lib/data/daily-plan.ts` — every counter is derived from actual activity (no manual check-offs); streak = consecutive days all three goals were met |
-| Leads | table/kanban sorted hottest-first, add modal (basics only), detail drawer with the 9-step qualification funnel, owner delete |
+| Leads | table/kanban sorted hottest-first, CSV import, add modal (basics only), bulk-select and email a batch, detail drawer with the 9-step qualification funnel, owner delete |
 | Clients | table → drawer with live `onboarding_steps`; flips to `live` when all done |
 | Templates | owner CRUD, copy-to-clipboard for all |
 | Team | owner-only; add member via service-role action, role toggle, remove |
@@ -125,10 +125,21 @@ pages (`app/admin/(protected)/<section>/actions.ts`).
 
 ### Lead qualification funnel
 
-Workflow: **Add lead (basics only) → open it → run the 9-step funnel → get
+Workflow: **Import a list or add a lead → open it → run the 9-step funnel → get
 score/tier → send the matching message.** The add form captures only the basics
 (business, contact, **phone required**, email, city, industry, source, notes);
 status is **not** set there. Each new lead starts as `new`.
+
+**CSV import** (`importLeads`) reads a header row with columns like business,
+contact, email, phone, city, state, industry, source, notes (aliases matched
+case-insensitively). Every lead needs a business name and at least an email or a
+phone; rows that duplicate an existing lead by email or phone are skipped, so
+re-importing an updated list is safe. **Bulk outreach** (`sendBulkLeadEmail`)
+tick leads in the table, then send one templated email to the batch via Resend;
+`{{business}}`, `{{first_name}}`, `{{city}}`, `{{sender}}` are filled per lead,
+each send is logged as a touch in `outreach_log`, and leads move to `contacted`.
+Leads with no email are skipped. The review-gap opener needs per-lead research,
+so send that one from the lead's own view rather than in a batch.
 
 The funnel lives on the lead detail drawer ([`components/admin/leads-view.tsx`](components/admin/leads-view.tsx),
 logic in [`lib/qualification.ts`](lib/qualification.ts)). The first four steps are

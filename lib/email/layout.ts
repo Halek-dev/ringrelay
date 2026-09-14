@@ -65,7 +65,7 @@ export function renderEmailHtml(bodyText: string): string {
           </tr>
           <tr>
             <td style="padding:18px 8px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#8a8577;" align="center">
-              Ring Relay. We relay the call. You keep the lead.<br/>
+              Ring Relay. More reviews. More calls. On autopilot.<br/>
               <a href="${SITE_URL}" style="color:#8a8577;">tryringrelay.com</a> &nbsp;·&nbsp;
               <a href="${SITE_URL}/privacy" style="color:#8a8577;">Privacy</a>
             </td>

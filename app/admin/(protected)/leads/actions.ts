@@ -19,6 +19,9 @@ import {
   deriveStatus,
   killInfo,
 } from "@/lib/qualification";
+import { parseCsv } from "@/lib/csv";
+import { sendEmailBatch } from "@/lib/email/send";
+import { substituteVars, type EmailVars } from "@/lib/email/layout";
 
 // Add captures the basics only. Status is NOT set here; new leads always
 // start as "new" and the qualification funnel drives status from there.
@@ -185,4 +188,281 @@ export async function deleteLead(id: string): Promise<ActionResult> {
   revalidatePath("/admin/leads");
   revalidatePath("/admin");
   return ok();
+}
+
+/* --------------------------- CSV import --------------------------- */
+
+// Header aliases so a list exported from Sheets, Apollo, or a scrape imports
+// without the user renaming columns first. All matched case-insensitively.
+const COLUMN_ALIASES: Record<string, string[]> = {
+  business: ["business", "business name", "business_name", "company", "company name", "name", "org", "organization"],
+  contact: ["contact", "contact name", "contact_name", "owner", "owner name", "first name", "full name", "person"],
+  email: ["email", "email address", "e-mail", "emails", "work email"],
+  phone: ["phone", "phone number", "telephone", "tel", "mobile", "cell"],
+  city: ["city", "town"],
+  state: ["state", "region", "province"],
+  industry: ["industry", "trade", "category", "type"],
+  source: ["source", "lead source", "list"],
+  notes: ["notes", "note", "comment", "comments"],
+};
+
+function normEmail(v: string): string {
+  return v.trim().toLowerCase();
+}
+
+/** Reduce a phone to its digits so "(555) 010-1234" and "5550101234" dedupe. */
+function normPhone(v: string): string {
+  return v.replace(/\D/g, "");
+}
+
+/** Map a free-text industry cell onto the LeadIndustry enum; default "other". */
+function normIndustry(v: string): LeadIndustry {
+  const s = v.trim().toLowerCase();
+  if (!s) return "other";
+  if (/(hvac|heat|cool|air|furnace|ac\b)/.test(s)) return "hvac";
+  if (/roof/.test(s)) return "roofing";
+  if (/plumb/.test(s)) return "plumbing";
+  if (/electric/.test(s)) return "electrical";
+  if (/(restor|water damage|mold|fire damage)/.test(s)) return "restoration";
+  if (["hvac", "roofing", "plumbing", "electrical", "restoration", "other"].includes(s))
+    return s as LeadIndustry;
+  return "other";
+}
+
+export type ImportResult = {
+  imported: number;
+  skipped: number; // duplicates of a lead we already have
+  failed: number; // rows with no business name, or no email and no phone
+  errors: string[]; // first few human-readable reasons, for the toast
+};
+
+/**
+ * Import a prospect list from raw CSV text. Requires a header row with at least
+ * a business column; every lead also needs an email or a phone (a way to reach
+ * them). Rows that duplicate an existing lead by email or phone are skipped, so
+ * re-importing an updated list is safe. New leads land as "new", ready for the
+ * qualification funnel.
+ */
+export async function importLeads(
+  csvText: string,
+): Promise<ActionResult<ImportResult>> {
+  const profile = await assertProfile();
+
+  const rows = parseCsv(csvText);
+  if (rows.length < 2)
+    return fail("The file needs a header row and at least one lead below it.");
+
+  const header = rows[0].map((h) => h.trim().toLowerCase());
+  const colOf = (key: string) =>
+    header.findIndex((h) => COLUMN_ALIASES[key].includes(h));
+  const col = {
+    business: colOf("business"),
+    contact: colOf("contact"),
+    email: colOf("email"),
+    phone: colOf("phone"),
+    city: colOf("city"),
+    state: colOf("state"),
+    industry: colOf("industry"),
+    source: colOf("source"),
+    notes: colOf("notes"),
+  };
+  if (col.business < 0)
+    return fail(
+      'No business column found. The header row needs a column like "business" or "company".',
+    );
+
+  const supabase = createClient();
+
+  // Dedupe against what we already hold, by email and by phone.
+  const { data: existing } = await supabase.from("leads").select("email, phone");
+  const seenEmail = new Set<string>();
+  const seenPhone = new Set<string>();
+  for (const e of (existing ?? []) as { email: string | null; phone: string | null }[]) {
+    if (e.email) seenEmail.add(normEmail(e.email));
+    if (e.phone) seenPhone.add(normPhone(e.phone));
+  }
+
+  type InsertRow = {
+    business_name: string;
+    contact_name: string | null;
+    email: string | null;
+    phone: string | null;
+    city: string | null;
+    state: string | null;
+    industry: LeadIndustry;
+    source: string;
+    notes: string | null;
+    status: LeadStatus;
+    next_action: string;
+    owner_id: string;
+  };
+
+  const toInsert: InsertRow[] = [];
+  let skipped = 0;
+  let failed = 0;
+  const errors: string[] = [];
+  const pushError = (msg: string) => {
+    if (errors.length < 5) errors.push(msg);
+  };
+
+  for (let r = 1; r < rows.length; r++) {
+    const cell = (c: number) => (c >= 0 ? (rows[r][c] ?? "").trim() : "");
+    const business = cell(col.business);
+    if (!business) {
+      failed++;
+      pushError(`Row ${r + 1}: no business name.`);
+      continue;
+    }
+
+    let email = cell(col.email);
+    if (email && !email.includes("@")) email = ""; // ignore junk in the email cell
+    const phone = cell(col.phone);
+    if (!email && !phone) {
+      failed++;
+      pushError(`Row ${r + 1}: ${business} has no email or phone.`);
+      continue;
+    }
+
+    const en = email ? normEmail(email) : "";
+    const pn = phone ? normPhone(phone) : "";
+    if ((en && seenEmail.has(en)) || (pn && seenPhone.has(pn))) {
+      skipped++;
+      continue;
+    }
+    if (en) seenEmail.add(en);
+    if (pn) seenPhone.add(pn);
+
+    toInsert.push({
+      business_name: business,
+      contact_name: cell(col.contact) || null,
+      email: email || null,
+      phone: phone || null,
+      city: cell(col.city) || null,
+      state: cell(col.state) || null,
+      industry: normIndustry(cell(col.industry)),
+      source: cell(col.source) || "CSV import",
+      notes: cell(col.notes) || null,
+      status: "new",
+      next_action: "Run qualification funnel",
+      owner_id: profile.id,
+    });
+  }
+
+  if (toInsert.length > 0) {
+    // Insert in chunks so a very large paste does not hit a statement limit.
+    for (let i = 0; i < toInsert.length; i += 500) {
+      const chunk = toInsert.slice(i, i + 500);
+      const { error } = await supabase.from("leads").insert(chunk);
+      if (error) return fail(error.message);
+    }
+    revalidatePath("/admin/leads");
+    revalidatePath("/admin");
+  }
+
+  return ok({ imported: toInsert.length, skipped, failed, errors });
+}
+
+/* --------------------------- bulk outreach email --------------------------- */
+
+function leadVars(
+  lead: {
+    business_name: string;
+    contact_name: string | null;
+    city: string | null;
+    state: string | null;
+  },
+  sender: string,
+): EmailVars {
+  const first = (lead.contact_name ?? "").trim().split(/\s+/)[0] || "there";
+  return {
+    business: lead.business_name ?? "",
+    contact: lead.contact_name ?? "",
+    first_name: first,
+    city: lead.city ?? "",
+    state: lead.state ?? "",
+    sender,
+    demo_url: "https://tryringrelay.com/demo",
+  };
+}
+
+/**
+ * Send the same outreach email to many leads at once via Resend's batch
+ * endpoint. Each lead's {{business}}, {{first_name}}, {{city}} and {{sender}}
+ * tokens are filled per recipient; tokens we cannot know for a batch (a
+ * competitor name, a review count) are left blank, so those openers are meant
+ * to be sent one at a time from the lead's own view. Only leads whose email
+ * actually sent get a logged touch and move into the pipeline, so a partial
+ * failure is safe to retry. Leads with no email address are skipped.
+ */
+export async function sendBulkLeadEmail(input: {
+  leadIds: string[];
+  subject: string;
+  body: string;
+  touchType: TouchType;
+}): Promise<ActionResult<{ sent: number; failed: number; skipped: number }>> {
+  const profile = await assertProfile();
+  if (input.leadIds.length === 0) return fail("No leads selected.");
+  if (!input.subject.trim()) return fail("Add a subject line.");
+  if (!input.body.trim()) return fail("The message is empty.");
+
+  const supabase = createClient();
+  const { data: leads, error } = await supabase
+    .from("leads")
+    .select("id, business_name, contact_name, email, city, state, status")
+    .in("id", input.leadIds);
+  if (error) return fail(error.message);
+  if (!leads || leads.length === 0) return fail("No leads found.");
+
+  const withEmail = leads.filter((l) => (l.email as string | null)?.trim());
+  const skipped = leads.length - withEmail.length;
+  if (withEmail.length === 0)
+    return fail("None of the selected leads have an email address.");
+
+  const sender = profile.full_name?.trim() || "the Ring Relay team";
+  const items = withEmail.map((l) => {
+    const vars = leadVars(
+      {
+        business_name: l.business_name as string,
+        contact_name: l.contact_name as string | null,
+        city: l.city as string | null,
+        state: l.state as string | null,
+      },
+      sender,
+    );
+    return {
+      ref: l.id as string,
+      to: l.email as string,
+      subject: substituteVars(input.subject, vars),
+      bodyText: substituteVars(input.body, vars),
+    };
+  });
+
+  const { successRefs, failedRefs } = await sendEmailBatch(items);
+
+  if (successRefs.length > 0) {
+    const now = new Date().toISOString();
+    await supabase.from("outreach_log").insert(
+      successRefs.map((id) => ({
+        lead_id: id,
+        profile_id: profile.id,
+        touch_type: input.touchType,
+        channel: "email" as const,
+      })),
+    );
+    // Leads still in the pre-contact stages move into the pipeline; the rest
+    // just get their last-touch stamp refreshed.
+    await supabase
+      .from("leads")
+      .update({ status: "contacted", last_touch_at: now })
+      .in("id", successRefs)
+      .in("status", ["new", "in_progress", "qualified"]);
+    await supabase
+      .from("leads")
+      .update({ last_touch_at: now })
+      .in("id", successRefs);
+  }
+
+  revalidatePath("/admin/leads");
+  revalidatePath("/admin");
+  return ok({ sent: successRefs.length, failed: failedRefs.length, skipped });
 }

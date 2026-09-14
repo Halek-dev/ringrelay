@@ -29,6 +29,7 @@ import {
   ExternalLink,
   AlertTriangle,
   Loader2,
+  Upload,
 } from "lucide-react";
 import { LeadBadge, TierBadge, ProgressBar } from "@/components/admin/ui";
 import { useToast } from "@/components/ui/toaster";
@@ -37,7 +38,11 @@ import {
   deleteLead,
   saveQualification,
   logTouch,
+  importLeads,
+  sendBulkLeadEmail,
+  type ImportResult,
 } from "@/app/admin/(protected)/leads/actions";
+import { substituteVars } from "@/lib/email/layout";
 import { findContact } from "@/app/admin/(protected)/leads/contact-actions";
 import {
   CHANNEL_LABEL,
@@ -113,6 +118,8 @@ export function LeadsView({
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortState>({ key: "score", dir: "desc" });
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [composeOpen, setComposeOpen] = useState(false);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -155,6 +162,38 @@ export function LeadsView({
 
   const activeLead = activeId ? leads.find((l) => l.id === activeId) ?? null : null;
 
+  // Bulk selection lives in the table view only. Switching to the board clears
+  // it so a hidden selection can never be emailed by accident.
+  const filteredIds = filtered.map((l) => l.id);
+  const allSelected =
+    filteredIds.length > 0 && filteredIds.every((id) => selected.has(id));
+  const selectedIds = filteredIds.filter((id) => selected.has(id));
+
+  function toggleAll() {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allSelected) filteredIds.forEach((id) => next.delete(id));
+      else filteredIds.forEach((id) => next.add(id));
+      return next;
+    });
+  }
+
+  function toggleOne(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function switchView(v: View) {
+    if (v === "board") setSelected(new Set());
+    setView(v);
+  }
+
+  const selectedLeads = leads.filter((l) => selected.has(l.id));
+
   return (
     <div>
       <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
@@ -163,11 +202,14 @@ export function LeadsView({
             Leads
           </h1>
           <p className="mt-1 text-[14.5px] text-body">
-            {leads.length} prospects, sorted hottest first. Add a lead, then open
-            it to run the qualification funnel.
+            {leads.length} prospects, sorted hottest first. Import a list or add
+            one, then open a lead to run the qualification funnel.
           </p>
         </div>
-        <AddLeadDialog />
+        <div className="flex items-center gap-2">
+          <ImportLeadsDialog />
+          <AddLeadDialog />
+        </div>
       </header>
 
       <div className="mb-4 flex items-center gap-2 rounded-full border border-line2 bg-card px-4 py-[9px] sm:max-w-[340px]">
@@ -224,14 +266,37 @@ export function LeadsView({
         </div>
 
         <div className="flex items-center gap-1 rounded-full border border-line2 bg-card p-1">
-          <ToggleBtn active={view === "table"} onClick={() => setView("table")}>
+          <ToggleBtn active={view === "table"} onClick={() => switchView("table")}>
             <Table2 size={15} /> Table
           </ToggleBtn>
-          <ToggleBtn active={view === "board"} onClick={() => setView("board")}>
+          <ToggleBtn active={view === "board"} onClick={() => switchView("board")}>
             <KanbanSquare size={15} /> Board
           </ToggleBtn>
         </div>
       </div>
+
+      {/* Bulk bar: tick leads, then email the whole batch one message. */}
+      {view === "table" && selectedIds.length > 0 && (
+        <div className="sticky top-3 z-10 mb-4 flex flex-wrap items-center gap-3 rounded-[12px] border border-acc/30 bg-acc/[0.08] px-4 py-3 shadow-soft backdrop-blur">
+          <span className="text-[13.5px] font-bold text-ink">
+            {selectedIds.length} selected
+          </span>
+          <button
+            type="button"
+            onClick={() => setComposeOpen(true)}
+            className="inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-acc px-4 py-[8px] text-[13px] font-bold text-white hover:bg-acc-b"
+          >
+            <Send size={13} /> Email {selectedIds.length}
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelected(new Set())}
+            className="ml-auto text-[13px] font-semibold text-mute hover:text-ink"
+          >
+            Clear
+          </button>
+        </div>
+      )}
 
       {view === "table" ? (
         <LeadTable
@@ -240,10 +305,25 @@ export function LeadsView({
           onSort={toggleSort}
           isOwner={isOwner}
           onOpen={(l) => setActiveId(l.id)}
+          selected={selected}
+          onToggleOne={toggleOne}
+          onToggleAll={toggleAll}
+          allSelected={allSelected}
         />
       ) : (
         <LeadBoard leads={filtered} onOpen={(l) => setActiveId(l.id)} />
       )}
+
+      <BulkEmailDialog
+        open={composeOpen}
+        onOpenChange={setComposeOpen}
+        leads={selectedLeads}
+        templates={templates}
+        onSent={() => {
+          setComposeOpen(false);
+          setSelected(new Set());
+        }}
+      />
 
       <Dialog.Root open={!!activeLead} onOpenChange={(o) => !o && setActiveId(null)}>
         <Dialog.Portal>
@@ -280,18 +360,35 @@ function LeadTable({
   onSort,
   isOwner,
   onOpen,
+  selected,
+  onToggleOne,
+  onToggleAll,
+  allSelected,
 }: {
   leads: Lead[];
   sort: SortState;
   onSort: (key: SortKey) => void;
   isOwner: boolean;
   onOpen: (l: Lead) => void;
+  selected: Set<string>;
+  onToggleOne: (id: string) => void;
+  onToggleAll: () => void;
+  allSelected: boolean;
 }) {
   return (
     <div className="overflow-x-auto rounded-[16px] border border-line2 bg-card shadow-soft">
       <table className="w-full min-w-[820px] border-collapse text-left">
         <thead>
           <tr className="border-b border-line2 bg-panel">
+            <th className="w-[44px] px-5 py-[13px]">
+              <input
+                type="checkbox"
+                aria-label="Select all"
+                checked={allSelected}
+                onChange={onToggleAll}
+                className="h-4 w-4 rounded border-line2 text-acc focus:ring-acc"
+              />
+            </th>
             {COLUMNS.map((col) => {
               const activeCol = col.key && sort.key === col.key;
               return (
@@ -327,12 +424,19 @@ function LeadTable({
         </thead>
         <tbody>
           {leads.map((l) => (
-            <LeadRow key={l.id} lead={l} isOwner={isOwner} onOpen={onOpen} />
+            <LeadRow
+              key={l.id}
+              lead={l}
+              isOwner={isOwner}
+              onOpen={onOpen}
+              selected={selected.has(l.id)}
+              onToggle={() => onToggleOne(l.id)}
+            />
           ))}
           {leads.length === 0 && (
             <tr>
               <td
-                colSpan={isOwner ? COLUMNS.length + 1 : COLUMNS.length}
+                colSpan={COLUMNS.length + 1 + (isOwner ? 1 : 0)}
                 className="px-5 py-10 text-center text-[14px] text-mute"
               >
                 No leads here yet.
@@ -349,10 +453,14 @@ function LeadRow({
   lead,
   isOwner,
   onOpen,
+  selected,
+  onToggle,
 }: {
   lead: Lead;
   isOwner: boolean;
   onOpen: (l: Lead) => void;
+  selected: boolean;
+  onToggle: () => void;
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -372,7 +480,10 @@ function LeadRow({
 
   return (
     <tr
-      onClick={() => onOpen(lead)}
+      onClick={(e) => {
+        if ((e.target as HTMLElement).closest("[data-select-cell]")) return;
+        onOpen(lead);
+      }}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
@@ -382,8 +493,20 @@ function LeadRow({
       tabIndex={0}
       role="button"
       aria-label={`Open ${lead.business_name}`}
-      className="cursor-pointer border-b border-line last:border-b-0 hover:bg-panel/60 focus-visible:bg-panel/60"
+      className={cn(
+        "cursor-pointer border-b border-line last:border-b-0 hover:bg-panel/60 focus-visible:bg-panel/60",
+        selected && "bg-acc/[0.05]",
+      )}
     >
+      <td data-select-cell className="px-5 py-[14px]">
+        <input
+          type="checkbox"
+          aria-label={`Select ${lead.business_name}`}
+          checked={selected}
+          onChange={onToggle}
+          className="h-4 w-4 rounded border-line2 text-acc focus:ring-acc"
+        />
+      </td>
       <td className="px-5 py-[14px] text-[14px] font-bold text-ink">
         <span className="inline-flex flex-wrap items-center gap-2">
           {lead.business_name}
@@ -1219,6 +1342,419 @@ function ContactChip({ lead }: { lead: Lead }) {
     >
       <Icon size={11} /> {bestChannelLabel(lead.contact_channels)}
     </span>
+  );
+}
+
+/* --------------------------- bulk email compose --------------------------- */
+
+// Only the first-touch and follow-up templates make sense as cold outreach.
+const OUTREACH_CATEGORIES: OutreachTemplate["category"][] = [
+  "first_touch",
+  "follow_up_1",
+  "follow_up_2",
+];
+
+const BULK_TOUCH_TYPES: TouchType[] = ["first_touch", "follow_up_1", "follow_up_2"];
+
+function firstNameOf(contact: string | null): string {
+  return (contact ?? "").trim().split(/\s+/)[0] || "there";
+}
+
+function BulkEmailDialog({
+  open,
+  onOpenChange,
+  leads,
+  templates,
+  onSent,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  leads: Lead[];
+  templates: OutreachTemplate[];
+  onSent: () => void;
+}) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [pending, startTransition] = useTransition();
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+  const [touchType, setTouchType] = useState<TouchType>("first_touch");
+
+  const usable = templates.filter(
+    (t) => t.is_active && OUTREACH_CATEGORIES.includes(t.category),
+  );
+  const withEmail = leads.filter((l) => l.email?.trim());
+  const noEmail = leads.length - withEmail.length;
+  const previewLead = withEmail[0] ?? leads[0];
+
+  function applyTemplate(id: string) {
+    const t = templates.find((x) => x.id === id);
+    if (t) setBody(t.body);
+  }
+
+  function preview(text: string): string {
+    if (!previewLead) return text;
+    return substituteVars(text, {
+      business: previewLead.business_name,
+      contact: previewLead.contact_name ?? "",
+      first_name: firstNameOf(previewLead.contact_name),
+      city: previewLead.city ?? "",
+      state: previewLead.state ?? "",
+      sender: "you",
+      demo_url: "tryringrelay.com/demo",
+    });
+  }
+
+  function send() {
+    if (!subject.trim()) {
+      toast({ variant: "info", title: "Add a subject line." });
+      return;
+    }
+    if (!body.trim()) {
+      toast({ variant: "info", title: "Write a message first." });
+      return;
+    }
+    if (withEmail.length === 0) {
+      toast({ variant: "info", title: "None of these leads have an email." });
+      return;
+    }
+    startTransition(async () => {
+      const res = await sendBulkLeadEmail({
+        leadIds: leads.map((l) => l.id),
+        subject,
+        body,
+        touchType,
+      });
+      if (!res.ok) {
+        toast({ variant: "info", title: "Not sent", description: res.error });
+        return;
+      }
+      toast({
+        title: `Sent to ${res.data.sent}`,
+        description:
+          [
+            res.data.failed > 0 ? `${res.data.failed} failed` : "",
+            res.data.skipped > 0 ? `${res.data.skipped} had no email` : "",
+          ]
+            .filter(Boolean)
+            .join(", ") || "Logged as a touch on each lead.",
+      });
+      setSubject("");
+      setBody("");
+      onSent();
+      router.refresh();
+    });
+  }
+
+  const fieldCls =
+    "w-full rounded-[10px] border-[1.5px] border-line2 bg-card2 px-[13px] py-[10px] text-[14px] text-ink placeholder:text-mute";
+
+  return (
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[92vh] w-[calc(100%-1.5rem)] max-w-[560px] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-[18px] border border-line2 bg-card p-6 shadow-card focus:outline-none">
+          <div className="mb-1 flex items-center justify-between">
+            <Dialog.Title className="font-display text-[19px] font-extrabold tracking-[-0.02em] text-ink">
+              Email {leads.length} lead{leads.length === 1 ? "" : "s"}
+            </Dialog.Title>
+            <Dialog.Close className="grid h-8 w-8 place-items-center rounded-full border border-line2 text-mute hover:text-ink">
+              <X size={16} />
+            </Dialog.Close>
+          </div>
+          <p className="mb-4 text-[13px] leading-[1.5] text-body">
+            One message, sent to each selected lead. {"{{business}}"},{" "}
+            {"{{first_name}}"}, {"{{city}}"} and {"{{sender}}"} are filled per
+            lead. Tokens we cannot know for a batch, like a competitor name or a
+            review count, come out blank, so send the review-gap opener one at a
+            time from a lead&apos;s own view.
+          </p>
+
+          {noEmail > 0 && (
+            <div className="mb-4 flex items-start gap-2 rounded-[10px] border border-acc/40 bg-acc/[0.06] px-3 py-2 text-[12.5px] leading-[1.5] text-acc-dim">
+              <AlertTriangle size={14} className="mt-[2px] shrink-0" />
+              <span>
+                {noEmail} of these {leads.length} have no email address and will
+                be skipped. {withEmail.length} will receive it.
+              </span>
+            </div>
+          )}
+
+          <div className="flex flex-col gap-4">
+            <label className="flex flex-col gap-[6px]">
+              <span className="text-[12.5px] font-bold text-ink">
+                Start from a template
+              </span>
+              <select
+                defaultValue=""
+                onChange={(e) => e.target.value && applyTemplate(e.target.value)}
+                className={fieldCls}
+              >
+                <option value="">Pick a template (optional)</option>
+                {usable.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="flex flex-col gap-[6px]">
+              <span className="text-[12.5px] font-bold text-ink">Subject</span>
+              <input
+                className={fieldCls}
+                placeholder="A quick idea for {{business}}'s Google reviews"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+              />
+            </label>
+
+            <label className="flex flex-col gap-[6px]">
+              <span className="text-[12.5px] font-bold text-ink">Message</span>
+              <textarea
+                rows={8}
+                className={cn(fieldCls, "resize-y leading-[1.55]")}
+                placeholder="Write your outreach, or pick a template above to start."
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+              />
+            </label>
+
+            {previewLead && (subject || body) && (
+              <div className="rounded-[12px] border border-line bg-panel px-3 py-3">
+                <div className="mb-1 font-mono text-[10.5px] font-semibold uppercase tracking-[0.12em] text-mute">
+                  Preview for {previewLead.business_name}
+                </div>
+                {subject && (
+                  <p className="text-[13px] font-bold text-ink">
+                    {preview(subject)}
+                  </p>
+                )}
+                {body && (
+                  <p className="mt-1 whitespace-pre-wrap text-[12.5px] leading-[1.55] text-body">
+                    {preview(body)}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <label className="flex items-center gap-2 text-[12.5px] font-semibold text-body">
+                Log as
+                <select
+                  value={touchType}
+                  onChange={(e) => setTouchType(e.target.value as TouchType)}
+                  className="rounded-[9px] border-[1.5px] border-line2 bg-card2 px-2 py-[7px] text-[13px] font-semibold text-ink"
+                >
+                  {BULK_TOUCH_TYPES.map((t) => (
+                    <option key={t} value={t}>
+                      {TOUCH_TYPE_LABEL[t]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="flex gap-2">
+                <Dialog.Close className="whitespace-nowrap rounded-full border-[1.5px] border-line2 px-5 py-[10px] text-[14px] font-bold text-ink">
+                  Cancel
+                </Dialog.Close>
+                <button
+                  type="button"
+                  onClick={send}
+                  disabled={pending || withEmail.length === 0}
+                  className="inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-acc px-5 py-[10px] text-[14px] font-bold text-white hover:bg-acc-b disabled:opacity-60"
+                >
+                  {pending ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Send size={14} />
+                  )}
+                  Send to {withEmail.length}
+                </button>
+              </div>
+            </div>
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
+/* ------------------------------ CSV import ------------------------------ */
+
+function ImportLeadsDialog() {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [open, setOpen] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const [text, setText] = useState("");
+  const [fileName, setFileName] = useState("");
+  const [result, setResult] = useState<ImportResult | null>(null);
+
+  function reset() {
+    setText("");
+    setFileName("");
+    setResult(null);
+  }
+
+  function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = () => setText(String(reader.result ?? ""));
+    reader.readAsText(file);
+  }
+
+  function run() {
+    if (!text.trim()) {
+      toast({ variant: "info", title: "Add a file or paste some rows first." });
+      return;
+    }
+    startTransition(async () => {
+      const res = await importLeads(text);
+      if (!res.ok) {
+        toast({ variant: "info", title: "Import failed", description: res.error });
+        return;
+      }
+      setResult(res.data);
+      toast({
+        title: `Imported ${res.data.imported}`,
+        description:
+          [
+            res.data.skipped > 0 ? `${res.data.skipped} duplicates skipped` : "",
+            res.data.failed > 0 ? `${res.data.failed} rows failed` : "",
+          ]
+            .filter(Boolean)
+            .join(", ") || "All rows added.",
+      });
+      router.refresh();
+    });
+  }
+
+  return (
+    <Dialog.Root
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (!o) reset();
+      }}
+    >
+      <Dialog.Trigger asChild>
+        <button
+          type="button"
+          className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border-[1.5px] border-line2 bg-card px-4 py-[10px] text-[14px] font-bold text-ink transition-colors hover:border-acc hover:text-acc"
+        >
+          <Upload size={16} strokeWidth={2.4} /> Import CSV
+        </button>
+      </Dialog.Trigger>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[92vh] w-[calc(100%-1.5rem)] max-w-[520px] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-[18px] border border-line2 bg-card p-6 shadow-card focus:outline-none">
+          <div className="mb-1 flex items-center justify-between">
+            <Dialog.Title className="font-display text-[19px] font-extrabold tracking-[-0.02em] text-ink">
+              Import leads from CSV
+            </Dialog.Title>
+            <Dialog.Close className="grid h-8 w-8 place-items-center rounded-full border border-line2 text-mute hover:text-ink">
+              <X size={16} />
+            </Dialog.Close>
+          </div>
+          <p className="mb-4 text-[13px] leading-[1.5] text-body">
+            First row is the header. We recognize columns like{" "}
+            <span className="font-semibold text-ink">
+              business, contact, email, phone, city, state, industry, source,
+              notes
+            </span>
+            . Each lead needs a business name and at least an email or a phone.
+            Duplicates of a lead you already have (same email or phone) are
+            skipped.
+          </p>
+
+          <div className="flex flex-col gap-3">
+            <label className="inline-flex w-fit cursor-pointer items-center gap-2 rounded-full border-[1.5px] border-line2 bg-card2 px-4 py-[9px] text-[13.5px] font-bold text-ink transition-colors hover:border-acc hover:text-acc">
+              <Upload size={15} /> Choose a .csv file
+              <input
+                type="file"
+                accept=".csv,text/csv,text/plain"
+                onChange={onFile}
+                className="hidden"
+              />
+            </label>
+            {fileName && (
+              <p className="text-[12.5px] text-mute">Loaded {fileName}</p>
+            )}
+
+            <div className="flex items-center gap-2">
+              <span className="h-px flex-1 bg-line" />
+              <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-mute">
+                or paste rows
+              </span>
+              <span className="h-px flex-1 bg-line" />
+            </div>
+
+            <textarea
+              rows={6}
+              value={text}
+              onChange={(e) => {
+                setText(e.target.value);
+                if (fileName) setFileName("");
+              }}
+              placeholder={"business,contact,email,phone,city,industry\nSummit Heating & Air,Dave K.,dave@summitair.com,(555) 010-1234,Denver,HVAC"}
+              className="w-full resize-y rounded-[10px] border-[1.5px] border-line2 bg-card2 px-[13px] py-[10px] font-mono text-[12.5px] leading-[1.5] text-ink placeholder:text-mute"
+            />
+
+            {result && (
+              <div className="rounded-[12px] border border-line bg-panel px-4 py-3 text-[13px]">
+                <div className="flex flex-wrap gap-x-5 gap-y-1">
+                  <span className="font-bold text-ink">
+                    {result.imported} imported
+                  </span>
+                  {result.skipped > 0 && (
+                    <span className="text-body">{result.skipped} duplicates skipped</span>
+                  )}
+                  {result.failed > 0 && (
+                    <span className="text-body">{result.failed} rows failed</span>
+                  )}
+                </div>
+                {result.errors.length > 0 && (
+                  <ul className="mt-2 list-disc pl-5 text-[12px] text-mute">
+                    {result.errors.map((e, i) => (
+                      <li key={i}>{e}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+
+            <div className="mt-1 flex justify-end gap-2">
+              {result ? (
+                <Dialog.Close className="whitespace-nowrap rounded-full bg-acc px-5 py-[10px] text-[14px] font-bold text-white hover:bg-acc-b">
+                  Done
+                </Dialog.Close>
+              ) : (
+                <>
+                  <Dialog.Close className="whitespace-nowrap rounded-full border-[1.5px] border-line2 px-5 py-[10px] text-[14px] font-bold text-ink">
+                    Cancel
+                  </Dialog.Close>
+                  <button
+                    type="button"
+                    onClick={run}
+                    disabled={pending}
+                    className="inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-acc px-5 py-[10px] text-[14px] font-bold text-white hover:bg-acc-b disabled:opacity-60"
+                  >
+                    {pending ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Upload size={14} />
+                    )}
+                    Import
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }
 
